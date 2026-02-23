@@ -1,0 +1,43 @@
+[
+  {
+    "title": "Software Engineer 2",
+    "company": "Asurion Insurance Services",
+    "location": "Milpitas, CA",
+    "period": "Sep 2024 - Present",
+    "description": "Built a SaaS-based knowledge base editor with versioning, checkpointing, and rollback for ML training documents, reducing update time to 10 minutes. Developed multi-cloud abstraction layer for AWS, GCP, and Azure, cutting deployment time to ~3 hours. Implemented real-time features using Kafka and WebSockets supporting ~2.5M daily requests.",
+    "tech": [
+      "Kafka",
+      "WebSockets",
+      "AWS",
+      "GCP",
+      "Azure",
+      "HUD.io",
+      "RBAC",
+      "Microservices"
+    ]
+  },
+  {
+    "title": "Software Development Engineer",
+    "company": "Binghamton University",
+    "location": "Binghamton, NY",
+    "period": "Jan 2023 - Sep 2024",
+    "description": "Built end-to-end analytics dashboard for graduate admissions, aggregating applicant and recruitment data. Integrated with SSO 2FA CAS 3.0 for role-based authorization. Reduced request time by 90% using Redis caching and improved search accuracy by 18% with geolocation API.",
+    "tech": ["Redis", "SSO", "CAS 3.0", "Geolocation API", "Analytics"]
+  },
+  {
+    "title": "Software Development Engineer",
+    "company": "Tata Consultancy Services",
+    "location": "Bengaluru, India",
+    "period": "June 2019 - July 2022",
+    "description": "Developed and deployed ETL pipelines using Apache Spark, SparkSQL, and Scala. Exported 50+ million records daily for financial crime reporting. Reduced job runtime by 50% to achieve 60-minute SLA. Remodeled 60+ jobs with load assurance capabilities for data reliability.",
+    "tech": [
+      "Apache Spark",
+      "SparkSQL",
+      "Scala",
+      "Hive",
+      "Zeppelin",
+      "Autosys",
+      "ETL"
+    ]
+  }
+]

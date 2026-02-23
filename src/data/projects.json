@@ -1,0 +1,42 @@
+[
+  {
+    "name": "DiceDB",
+    "description": "Key Value in-memory database built on go.",
+    "tech": ["Go", "Sockets", "Multithreading"]
+  },
+  {
+    "name": "Http Server using Go",
+    "description": "A simple http server built from scratch using Go.",
+    "tech": ["Go", "HTTP", "Sockets"],
+    "github": "https://github.com/apoorvyadav1111/go-http-server",
+    "live": "https://github.com/apoorvyadav1111/go-http-server"
+  },
+  {
+    "name": "Redis Server",
+    "description": "Redis server built using Python, asyncio and sockets.",
+    "tech": ["Python", "Sockets", "Redis", "Asyncio", "Multithreading"],
+    "github": "https://github.com/apoorvyadav1111/python-redis-server",
+    "live": "https://github.com/apoorvyadav1111/python-redis-server"
+  },
+  {
+    "name": "Codespeed",
+    "description": "A web app that helps users improve their typing speed and accuracy.",
+    "tech": ["React", "TypeScript", "Next.js", "Tailwind", "Framer Motion"],
+    "github": "https://github.com/apoorvyadav1111/codespeed",
+    "live": "https://codespeed.vercel.app"
+  },
+  {
+    "name": "Smart Note Taking App",
+    "description": "A web app that helps users take notes and organize them.",
+    "tech": ["React", "TypeScript", "Next.js", "Tailwind", "Convex"],
+    "github": "https://github.com/apoorvyadav1111/Motion",
+    "live": "https://takesmartnotes.vercel.app"
+  },
+  {
+    "name": "AgilityCoach",
+    "description": "A web app that helps athletes improve their agility and reaction time.",
+    "tech": ["Flask", "Python", "JavaScript", "OpenCV", "PostgreSQL"],
+    "github": "https://github.com/apoorvyadav1111/agilitycoach",
+    "live": "https://github.com/apoorvyadav1111/agilitycoach"
+  }
+]
