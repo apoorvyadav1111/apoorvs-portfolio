@@ -1,6 +1,6 @@
 [
   {
-    "name": "DiceDB",
+    "name": "DiceDB (Legacy)",
     "description": "Key Value in-memory database built on go.",
     "tech": ["Go", "Sockets", "Multithreading"]
   },
