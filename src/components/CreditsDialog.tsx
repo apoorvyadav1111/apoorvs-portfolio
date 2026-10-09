@@ -26,6 +26,15 @@ const SECTIONS: { title: string; items: { name: string; by: string; href: string
     ],
   },
   {
+    title: "Globe",
+    items: [
+      { name: "Natural Earth", by: "public domain", href: "https://www.naturalearthdata.com/", note: "world map" },
+      { name: "world-atlas", by: "Mike Bostock", href: "https://github.com/topojson/world-atlas", note: "map data" },
+      { name: "topojson-client", by: "Mike Bostock", href: "https://github.com/topojson/topojson-client", note: "reads the map" },
+      { name: "Solar calculations", by: "NOAA", href: "https://gml.noaa.gov/grad/solcalc/", note: "sun position" },
+    ],
+  },
+  {
     title: "Tools & libraries",
     items: [
       { name: "Next.js", by: "Vercel", href: "https://nextjs.org" },
@@ -126,7 +135,7 @@ export default function CreditsDialog({ name }: { name: string }) {
 
           <p className="mt-6 text-xs text-muted">
             Typefaces are used under the SIL Open Font License; Lucide icons are ISC; the libraries are MIT,
-            Apache-2.0 or ISC licensed.
+            Apache-2.0 or ISC licensed. Natural Earth map data is in the public domain.
           </p>
         </div>
       </dialog>
