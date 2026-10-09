@@ -28,6 +28,7 @@ export interface Theme {
   radius: string; // cards and panels
   pill: string; // buttons and tags
   grain: number; // paper-texture opacity, 0 to disable
+  photoFilter?: string; // CSS filter for photos, e.g. "grayscale(1)"; hover shows the original
   light: Palette;
   dark: Palette;
 }

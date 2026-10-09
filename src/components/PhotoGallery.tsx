@@ -71,7 +71,7 @@ function Plates({
                 height={photo.height}
                 sizes="(min-width: 1024px) 800px, 100vw"
                 priority={i === 0}
-                className="h-auto w-full transition-transform duration-[1.4s] ease-out group-hover:scale-[1.02]"
+                className="photo h-auto w-full transition-[transform,filter] duration-[1.4s] ease-out group-hover:scale-[1.02]"
               />
             </button>
             <figcaption className={flip ? "lg:order-1 lg:text-right" : ""}>
@@ -256,7 +256,7 @@ function Tile({
           alt={photo.title}
           fill
           sizes={sizes}
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          className="photo object-cover transition-[transform,filter] duration-700 ease-out group-hover:scale-[1.04]"
         />
       ) : (
         <Image
@@ -265,7 +265,7 @@ function Tile({
           width={photo.width}
           height={photo.height}
           sizes={sizes}
-          className="h-auto w-full transition-transform duration-[1.2s] ease-out group-hover:scale-[1.03]"
+          className="photo h-auto w-full transition-[transform,filter] duration-[1.2s] ease-out group-hover:scale-[1.03]"
         />
       )}
       {/* Caption on hover; always shown on touch screens, which can't hover.

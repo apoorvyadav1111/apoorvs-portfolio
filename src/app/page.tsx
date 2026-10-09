@@ -201,7 +201,7 @@ export default function Home() {
               alt={cover.title}
               fill
               sizes="(min-width: 1024px) 1024px, 100vw"
-              className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-[1.03]"
+              className="photo object-cover transition-[transform,filter] duration-[1.2s] ease-out group-hover:scale-[1.03]"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-6 text-white sm:p-10">

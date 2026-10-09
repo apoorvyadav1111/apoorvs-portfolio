@@ -11,8 +11,9 @@ import type { Palette, Theme } from "./types";
 import { trail } from "./trail";
 import { riso } from "./riso";
 import { swiss } from "./swiss";
+import { graphite } from "./graphite";
 
-export const THEMES: Theme[] = [trail, riso, swiss];
+export const THEMES: Theme[] = [trail, riso, swiss, graphite];
 export const DEFAULT_THEME = "trail";
 
 export type { Theme, Palette };
@@ -57,6 +58,7 @@ export function themeCss() {
       `--theme-radius:${t.radius}`,
       `--theme-pill:${t.pill}`,
       `--theme-grain:${t.grain}`,
+      `--photo-filter:${t.photoFilter ?? "none"}`,
     ].join(";");
     return [
       `${sel}{${base}}`,

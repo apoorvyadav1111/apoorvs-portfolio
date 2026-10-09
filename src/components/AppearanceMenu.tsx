@@ -198,7 +198,7 @@ export default function AppearanceMenu() {
           </div>
 
           <Section label="Theme">
-            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Theme">
+            <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Theme">
               {THEMES.map((t) => {
                 const p = t[appearance.resolved];
                 const active = appearance.palette === t.id;
