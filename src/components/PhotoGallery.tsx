@@ -139,6 +139,10 @@ const SMALL_LAYOUTS = [
   { count: 2, className: "hidden sm:flex lg:hidden" },
 ];
 
+// Photos render in pages of 24 (a multiple of every column count: 1, 2, 3, 4,
+// 6 and 8), so each batch ends on a full row whatever the grid size.
+const PAGE_SIZE = 24;
+
 function Masonry({
   photos,
   onOpen,
@@ -150,6 +154,27 @@ function Masonry({
   const desktop = useRef<HTMLDivElement>(null);
   usePinchToResize(desktop);
 
+  // The next page loads as the end of the grid comes within ~1200px of view.
+  // Indices stay those of the full list, so the viewer can reach every photo.
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const remaining = photos.length - shown;
+  const showMore = useCallback(
+    () => setShown((n) => Math.min(n + PAGE_SIZE, photos.length)),
+    [photos.length],
+  );
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || remaining <= 0) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => entry.isIntersecting && showMore(),
+      { rootMargin: "1200px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [remaining, showMore]);
+  const visible = photos.slice(0, shown);
+
   // Every layout shares one `sizes`, so each image resolves to the same URL
   // whichever layout is visible and is only downloaded once.
   const sizes = `(min-width: 1024px) ${Math.ceil(1152 / level.columns)}px, (min-width: 640px) 50vw, 100vw`;
@@ -158,7 +183,7 @@ function Masonry({
     <>
       {SMALL_LAYOUTS.map(({ count, className }) => (
         <div key={count} className={`${className} gap-4`}>
-          {balance(photos, count).map((column, c) => (
+          {balance(visible, count).map((column, c) => (
             <div key={c} className="flex flex-1 flex-col gap-4">
               {column.map((i) => (
                 <Tile key={photos[i].src} photo={photos[i]} sizes={sizes} onOpen={() => onOpen(i)} />
@@ -175,13 +200,13 @@ function Masonry({
             className="grid gap-1"
             style={{ gridTemplateColumns: `repeat(${level.columns}, minmax(0, 1fr))` }}
           >
-            {photos.map((photo, i) => (
+            {visible.map((photo, i) => (
               <Tile key={photo.src} photo={photo} sizes={sizes} square transitionName={`photo-${i}`} onOpen={() => onOpen(i)} />
             ))}
           </div>
         ) : (
           <div className="flex gap-4">
-            {balance(photos, level.columns).map((column, c) => (
+            {balance(visible, level.columns).map((column, c) => (
               <div key={c} className="flex flex-1 flex-col gap-4">
                 {column.map((i) => (
                   <Tile key={photos[i].src} photo={photos[i]} sizes={sizes} transitionName={`photo-${i}`} onOpen={() => onOpen(i)} />
@@ -191,6 +216,17 @@ function Masonry({
           </div>
         )}
       </div>
+
+      {remaining > 0 && (
+        <div ref={sentinel} className="mt-12 flex justify-center">
+          <button
+            onClick={showMore}
+            className="rounded-pill border border-line px-5 py-2.5 text-sm text-muted transition-colors hover:border-fg hover:text-fg"
+          >
+            Show more photos ({remaining} more)
+          </button>
+        </div>
+      )}
     </>
   );
 }
