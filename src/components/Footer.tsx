@@ -1,4 +1,4 @@
-import { Github, Linkedin, Rss } from "lucide-react";
+import { Github, Linkedin } from "lucide-react";
 import ThemePicker from "./ThemePicker";
 import { THEMES } from "@/themes";
 
@@ -10,7 +10,6 @@ export default function Footer({ personal }: FooterProps) {
   const links = [
     { href: personal.github, label: "GitHub", icon: Github },
     { href: personal.linkedin, label: "LinkedIn", icon: Linkedin },
-    { href: "/rss.xml", label: "RSS", icon: Rss },
   ];
 
   return (

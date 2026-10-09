@@ -7,14 +7,19 @@ import { DEFAULT_THEME, themeCss, themeInitScript } from "@/themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Makes link-preview image URLs absolute, as LinkedIn and others require
+  metadataBase: new URL(personal.url),
   title: {
     default: `${personal.name} — Software Engineer`,
     template: `%s — ${personal.name}`,
   },
   description: personal.bio,
-  alternates: {
-    types: { "application/rss+xml": "/rss.xml" },
+  openGraph: {
+    type: "website",
+    siteName: personal.name,
+    url: "/",
   },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

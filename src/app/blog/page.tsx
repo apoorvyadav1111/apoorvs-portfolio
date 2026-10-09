@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Rss } from "lucide-react";
 import { getAllPosts, formatDate } from "@/lib/posts";
 
 export const metadata: Metadata = {
@@ -29,12 +28,6 @@ export default function BlogIndex() {
           Long-form notes on distributed systems, networking, and the side
           projects I build to understand them.
         </p>
-        <a
-          href="/rss.xml"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-accent"
-        >
-          <Rss className="h-3.5 w-3.5" /> Subscribe via RSS
-        </a>
       </header>
 
       {posts.length === 0 ? (

@@ -1,10 +1,11 @@
 {
   "name": "Apoorv Yadav",
   "title": "Software Engineer 2",
-  "location": "Milpitas, CA",
+  "location": "California",
   "currently": "Software Engineer 2 at Asurion",
-  "headline": "I build systems that hold up at scale — and take photographs when I step away from them.",
-  "bio": "Passionate about building scalable applications and solving complex problems. I specialize in modern web technologies and love turning ideas into reality through clean, efficient code.",
+  "headline": "I design systems built for scale and speed — and photograph the places I go to slow down.",
+  "bio": "Software engineer at Asurion, working on real-time and distributed backend systems. I write about how large systems like search engines, streaming pipelines and real-time apps are built, and I learn by building small versions myself.",
   "github": "https://github.com/apoorvyadav1111",
-  "linkedin": "https://linkedin.com/in/yadavapoorv"
+  "linkedin": "https://linkedin.com/in/yadavapoorv",
+  "url": "https://apoorvyadav.vercel.app"
 }
