@@ -94,14 +94,7 @@ export default function Home() {
                   <span className="text-accent">{job.company}</span>
                 </h3>
                 <p className="mt-1 text-sm text-muted">{job.location}</p>
-                <ul className="mt-4 space-y-2.5 leading-relaxed">
-                  {job.highlights.map((point) => (
-                    <li key={point} className="relative pl-5">
-                      <span aria-hidden className="absolute left-0 top-[0.7em] h-1 w-2.5 rounded-pill bg-accent/60" />
-                      {point}
-                    </li>
-                  ))}
-                </ul>
+                <p className="mt-4 leading-relaxed">{job.summary}</p>
                 <p className="mt-4 font-mono text-xs text-muted">
                   {job.tech.join("  /  ")}
                 </p>
