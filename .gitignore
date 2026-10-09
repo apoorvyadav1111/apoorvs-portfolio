@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# originals waiting for / processed by `npm run photos`
+/photos-inbox/

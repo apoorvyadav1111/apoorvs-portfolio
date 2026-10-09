@@ -1,0 +1,145 @@
+[
+  {
+    "title": "Behind the Scenes: Building a Robust Ads Event Processing Pipeline",
+    "url": "https://netflixtechblog.com/behind-the-scenes-building-a-robust-ads-event-processing-pipeline-e4e86caf9249",
+    "author": "Kinesh Satiya",
+    "date": "2026-10-09",
+    "summary": "How Netflix's ad event pipeline evolved from the 2022 ad-supported plan with Microsoft to an in-house ads platform. A centralized Ads Event Publisher now decrypts, enriches and publishes ad telemetry under one data contract, and consumers like frequency capping, an Ads Sessionizer and the vendor event handler sit downstream of it. Apache Flink jobs process events in real time and write metrics to Apache Druid, backed by an offline job that corrects inaccuracies.",
+    "tags": [
+      "streaming",
+      "kafka",
+      "flink"
+    ]
+  },
+  {
+    "title": "Redis new data structure: the HyperLogLog",
+    "url": "https://antirez.com/news/75",
+    "author": "antirez",
+    "date": "2026-08-19",
+    "summary": "Introduces HyperLogLog in Redis: estimating the number of unique elements in a set with 12 KB per key and a 0.81% standard error. Explains the idea through a coin-flipping analogy, then covers Redis's implementation details and bias corrections.",
+    "tags": [
+      "algorithms",
+      "data-structures",
+      "redis"
+    ]
+  },
+  {
+    "title": "HyperLogLog in Presto: A significantly faster way to handle cardinality estimation",
+    "url": "https://engineering.fb.com/2018/12/13/data-infrastructure/hyperloglog/",
+    "author": "Mehrdad Honarkhah, Arya Talebzadeh",
+    "date": "2026-08-19",
+    "summary": "How Meta added HyperLogLog to Presto as the APPROX_DISTINCT function for counting distinct values at massive scale. Swapping exact counts for HLL sketches cut some queries from days to hours and memory from terabytes to under 1 MB. It also covers how the sketches can be stored and merged later, so counts can be combined across days without re-scanning raw data.",
+    "tags": [
+      "algorithms",
+      "data-structures",
+      "databases"
+    ]
+  },
+  {
+    "title": "How we built it: Real-time analytics for Stripe Billing",
+    "url": "https://stripe.dev/blog/how-we-built-it-real-time-analytics-for-stripe-billing",
+    "author": "Reed Trevelyan",
+    "date": "2026-08-14",
+    "summary": "How Stripe moved Billing analytics from daily batch jobs to Apache Flink streaming, cutting data latency from 24 hours to 15 minutes. When a customer changes a metric definition, history is recalculated in parallel while incoming events are buffered, then replayed against the updated state.",
+    "tags": [
+      "distributed-systems",
+      "streaming",
+      "flink"
+    ]
+  },
+  {
+    "title": "How Discord Indexes Trillions of Messages",
+    "url": "https://discord.com/blog/how-discord-indexes-trillions-of-messages",
+    "author": "Vicki Niu",
+    "date": "2026-05-12",
+    "summary": "How Discord rebuilt message search by splitting two huge Elasticsearch clusters into many smaller clusters grouped into \"cells\". They replaced a Redis-backed indexing queue with PubSub for guaranteed delivery, and workers now batch messages headed to the same cluster. Servers big enough to hit Lucene's ~2-billion-document limit get a dedicated cell where they can be reindexed with more primary shards.",
+    "tags": [
+      "distributed-systems",
+      "search",
+      "elasticsearch"
+    ]
+  },
+  {
+    "title": "Real-time mouse pointers",
+    "url": "https://www.canva.dev/blog/engineering/realtime-mouse-pointers/",
+    "author": "Anton Egorov, Mark Gurevich",
+    "date": "2026-02-25",
+    "summary": "Canva's first version sent pointer updates over WebSockets, with Redis distributing them across stateless backend instances — enough for hundreds of thousands of connected clients and about 100,000 updates per second. Raising the target from 3 to 60 updates per second made that path too slow and expensive, so they moved to a WebRTC mesh where each browser connects directly to every other user in the session. The WebSocket infrastructure stayed on for signaling and fallback, and roughly half of connections still relay through TURN servers.",
+    "tags": [
+      "system-design",
+      "webrtc",
+      "websockets"
+    ]
+  },
+  {
+    "title": "pg_stat_ch: a PostgreSQL extension that exports every metric to ClickHouse",
+    "url": "https://clickhouse.com/blog/pg_stat_ch-postgres-extension-stats-to-clickhouse",
+    "author": "Kaushik Iska",
+    "date": "2026-02-20",
+    "summary": "pg_stat_ch turns every Postgres query execution into a fixed-size event and streams it to ClickHouse for analysis. The hot path is just a memcpy into a shared-memory ring buffer; a background worker batches events, compresses them with LZ4 and flushes once per second, and drops events on overflow rather than applying back-pressure to Postgres. Try-lock and process-local batching cut lock acquisitions from about 150,000 to 30,000 per second under a TPC-B workload — a 5x reduction in contention.",
+    "tags": [
+      "postgresql",
+      "observability",
+      "clickhouse"
+    ]
+  },
+  {
+    "title": "Did you mean \"Galene\"? Introducing LinkedIn's new search architecture",
+    "url": "https://engineering.linkedin.com/search/did-you-mean-galene",
+    "author": "Sriram Sankar, Asif Makhani",
+    "date": "2025-09-13",
+    "summary": "LinkedIn's earlier search stack layered Lucene, Zoie, Sensei, Bobo and more on top of each other, making full index rebuilds, updates and scoring changes painful. Galene kept Lucene but moved index builds to offline Hadoop jobs, added term-partitioned segments for live field-level updates, and made scorers and query rewriters pluggable. Instant member search on Galene was more than twice as fast on about a third of the hardware, and could search all 300M+ members instead of just your connections.",
+    "tags": [
+      "search",
+      "distributed-systems",
+      "lucene"
+    ]
+  },
+  {
+    "title": "S2 Cells",
+    "url": "http://s2geometry.io/devguide/s2cell_hierarchy",
+    "author": "S2 Geometry",
+    "date": "2025-09-07",
+    "summary": "S2 projects the six faces of a cube onto the sphere and recursively subdivides each face into a hierarchy of cells. There are 31 levels, from whole faces at level 0 down to leaf cells about 1 cm across at level 30. Cell IDs follow a Hilbert curve, so cells that are close on Earth also have numerically close IDs, which makes spatial indexing efficient.",
+    "tags": [
+      "geospatial",
+      "algorithms",
+      "data-structures"
+    ]
+  },
+  {
+    "title": "Geohashes",
+    "url": "https://www.ibm.com/docs/en/streams/4.3.0?topic=334-geohashes",
+    "author": "IBM Streams documentation",
+    "date": "2025-09-07",
+    "summary": "Explains how the Geohash algorithm converts a latitude and longitude into a string identifying the region a point falls in. The number of bits sets the precision: more bits give a longer geohash and smaller regions, and points close together share the same geohash. It also notes that in this toolkit, geometries spanning the Prime Meridian, the poles or the Equator return an empty geohash.",
+    "tags": [
+      "geospatial",
+      "algorithms"
+    ]
+  },
+  {
+    "title": "Elasticsearch from the Bottom Up, Part 1",
+    "url": "https://www.elastic.co/blog/found-elasticsearch-from-the-bottom-up",
+    "author": "Alex Brasetvik",
+    "date": "2025-08-31",
+    "summary": "Starts from Lucene's inverted index: a sorted term dictionary pointing to postings lists of the documents that contain each term. Index segments are immutable, so new documents are buffered in memory and written out as new segments, while deletes are only marked until segments are merged. Elasticsearch layers indexes and shards (each a Lucene index) on top, and refreshes roughly every second so new segments become searchable — near real-time search.",
+    "tags": [
+      "search",
+      "lucene",
+      "elasticsearch"
+    ]
+  },
+  {
+    "title": "Introducing DoorDash’s in-house search engine",
+    "url": "https://careersatdoordash.com/blog/introducing-doordashs-in-house-search-engine/",
+    "author": "Konstantin Shulgin, Anish Walawalkar, Satish Saley",
+    "date": "2025-08-23",
+    "summary": "DoorDash found Elasticsearch's document replication and lack of support for document relationships would stop scaling as search moved to a hybrid of stores and items, so they built their own engine on Apache Lucene. It uses segment replication: a single indexer writes segments to S3, replicated searchers serve queries from them, and a broker fans queries out across shards after a query-planning service rewrites them. The migration cut p99.9 latency by 50% and hardware cost by 75%.",
+    "tags": [
+      "search",
+      "lucene",
+      "system-design"
+    ]
+  }
+]

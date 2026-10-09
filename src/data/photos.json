@@ -1,0 +1,382 @@
+[
+  {
+    "src": "/photos/pfeiffer-beach.jpg",
+    "title": "Pfeiffer Beach",
+    "location": "Big Sur, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/364s · ISO 64",
+    "taken": "2026-02-01"
+  },
+  {
+    "src": "/photos/img-6806.jpg",
+    "title": "Coastal Fog",
+    "location": "Gold Bluffs Beach, Prairie Creek Redwoods",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/1473s · ISO 80",
+    "taken": "2026-07-04"
+  },
+  {
+    "src": "/photos/img-6872.jpg",
+    "title": "Into the Mist",
+    "location": "Redwood National and State Parks, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/533s · ISO 32",
+    "taken": "2026-07-04"
+  },
+  {
+    "src": "/photos/img-6823.jpg",
+    "title": "Fern Canyon",
+    "location": "Prairie Creek Redwoods, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/166s · ISO 80",
+    "taken": "2026-07-04"
+  },
+  {
+    "src": "/photos/img-6719.jpg",
+    "title": "Vernal and Nevada Falls",
+    "location": "Yosemite National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/797s · ISO 32",
+    "taken": "2026-06-28"
+  },
+  {
+    "src": "/photos/img-6709.jpg",
+    "title": "Tunnel View",
+    "location": "Yosemite National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "38mm · ƒ/1.8 · 1/3717s · ISO 80",
+    "taken": "2026-06-28"
+  },
+  {
+    "src": "/photos/img-6643.jpg",
+    "title": "Vernal Fall",
+    "location": "Yosemite National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/13699s · ISO 80",
+    "taken": "2026-06-27"
+  },
+  {
+    "src": "/photos/img-6469.jpg",
+    "title": "Fallen Giant",
+    "location": "Sequoia National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/952s · ISO 80",
+    "taken": "2026-05-23"
+  },
+  {
+    "src": "/photos/img-6459-snapseedcopy.jpg",
+    "title": "Between the Pines",
+    "location": "Sequoia National Park, California",
+    "width": 1440,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 10s · ISO 12500",
+    "taken": "2026-05-23"
+  },
+  {
+    "src": "/photos/img-6394.jpg",
+    "title": "Giant Sequoia",
+    "location": "Sequoia National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/724s · ISO 80",
+    "taken": "2026-05-22"
+  },
+  {
+    "src": "/photos/img-6213.jpg",
+    "title": "Yosemite Falls",
+    "location": "Yosemite National Park, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/2809s · ISO 64",
+    "taken": "2026-05-16"
+  },
+  {
+    "src": "/photos/img-6363.jpg",
+    "title": "Bridalveil Fall",
+    "location": "Yosemite National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/402s · ISO 32",
+    "taken": "2026-05-16"
+  },
+  {
+    "src": "/photos/img-6187.jpg",
+    "title": "Bixby Creek Bridge",
+    "location": "Big Sur, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "91mm · ƒ/2.8 · 1/570s · ISO 32",
+    "taken": "2026-05-09"
+  },
+  {
+    "src": "/photos/img-6105.jpg",
+    "title": "McWay Falls",
+    "location": "Big Sur, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/312s · ISO 32",
+    "taken": "2026-03-28"
+  },
+  {
+    "src": "/photos/img-6031.jpg",
+    "title": "Golden Hour",
+    "location": "Milpitas, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "154mm · ƒ/2.8 · 1/12658s · ISO 20",
+    "taken": "2026-03-15"
+  },
+  {
+    "src": "/photos/img-5903.jpg",
+    "title": "Wind Country",
+    "location": "Altamont Pass, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/99s · ISO 32",
+    "taken": "2026-02-14"
+  },
+  {
+    "src": "/photos/img-5813.jpg",
+    "title": "The Keyhole",
+    "location": "Pfeiffer Beach, Big Sur",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/634s · ISO 80",
+    "taken": "2026-02-01"
+  },
+  {
+    "src": "/photos/img-5548.jpg",
+    "title": "Golden Gate",
+    "location": "San Francisco, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/3257s · ISO 64",
+    "taken": "2025-12-06"
+  },
+  {
+    "src": "/photos/img-5508.jpg",
+    "title": "The Lone Cypress",
+    "location": "17-Mile Drive, Pebble Beach",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/95s · ISO 250",
+    "taken": "2025-11-30"
+  },
+  {
+    "src": "/photos/img-5288.jpg",
+    "title": "Bumpass Hell",
+    "location": "Lassen Volcanic National Park, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/12048s · ISO 80",
+    "taken": "2025-10-12"
+  },
+  {
+    "src": "/photos/img-5309.jpg",
+    "title": "Lake Helen",
+    "location": "Lassen Volcanic National Park, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "39mm · ƒ/1.8 · 1/4184s · ISO 80",
+    "taken": "2025-10-12"
+  },
+  {
+    "src": "/photos/img-5350.jpg",
+    "title": "Early Snow",
+    "location": "Lassen Volcanic National Park, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/1340s · ISO 32",
+    "taken": "2025-10-12"
+  },
+  {
+    "src": "/photos/img-5069.jpg",
+    "title": "Burney Falls",
+    "location": "McArthur-Burney Falls, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/444s · ISO 80",
+    "taken": "2025-10-11"
+  },
+  {
+    "src": "/photos/img-4960.jpg",
+    "title": "Among the Redwoods",
+    "location": "Sequoia National Park, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/186s · ISO 80",
+    "taken": "2025-09-27"
+  },
+  {
+    "src": "/photos/img-4729.jpg",
+    "title": "Sunrise over the Amphitheater",
+    "location": "Bryce Canyon National Park, Utah",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "78mm · ƒ/2.8 · 1/99s · ISO 80",
+    "taken": "2025-09-20"
+  },
+  {
+    "src": "/photos/img-4874.jpg",
+    "title": "Looking Up",
+    "location": "Bryce Canyon National Park, Utah",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "14mm · ƒ/2.2 · 1/1770s · ISO 50",
+    "taken": "2025-09-20"
+  },
+  {
+    "src": "/photos/img-4877.jpg",
+    "title": "Thor's Hammer",
+    "location": "Bryce Canyon National Park, Utah",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/1908s · ISO 32",
+    "taken": "2025-09-20"
+  },
+  {
+    "src": "/photos/img-4705.jpg",
+    "title": "The Watchman",
+    "location": "Zion National Park, Utah",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/2809s · ISO 64",
+    "taken": "2025-09-19"
+  },
+  {
+    "src": "/photos/img-4422.jpg",
+    "title": "First Light, Zion Canyon",
+    "location": "Zion National Park, Utah",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/91s · ISO 80",
+    "taken": "2025-09-18"
+  },
+  {
+    "src": "/photos/img-4461.jpg",
+    "title": "The View from the Top",
+    "location": "Zion National Park, Utah",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "14mm · ƒ/2.2 · 1/716s · ISO 40",
+    "taken": "2025-09-18"
+  },
+  {
+    "src": "/photos/angels-landing.jpg",
+    "title": "Angels Landing",
+    "location": "Zion National Park, Utah",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/5556s · ISO 64",
+    "taken": "2025-09-18"
+  },
+  {
+    "src": "/photos/img-4131.jpg",
+    "title": "Japanese Tea Garden",
+    "location": "Golden Gate Park, San Francisco",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "92mm · ƒ/2.8 · 1/99s · ISO 50",
+    "taken": "2025-05-25"
+  },
+  {
+    "src": "/photos/img-3936.jpg",
+    "title": "Moonrise Over the Pasture",
+    "location": "Ed R. Levin County Park, Milpitas",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "114mm · ƒ/2.8 · 1/405s · ISO 32",
+    "taken": "2025-05-10"
+  },
+  {
+    "src": "/photos/img-3485.jpg",
+    "title": "Glass Water",
+    "location": "Lake Tahoe",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/431s · ISO 64",
+    "taken": "2024-12-30"
+  },
+  {
+    "src": "/photos/img-1993.jpg",
+    "title": "Red Sky",
+    "location": "Binghamton, New York",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "146mm · ƒ/2.8 · 1/60s · ISO 400",
+    "taken": "2024-05-06"
+  },
+  {
+    "src": "/photos/img-1410.jpg",
+    "title": "Red Maples",
+    "location": "Binghamton University, New York",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/3597s · ISO 80",
+    "taken": "2023-10-20"
+  },
+  {
+    "src": "/photos/img-0590.jpg",
+    "title": "Coastline at First Light",
+    "location": "In flight",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/2421s · ISO 32",
+    "taken": "2023-05-15"
+  },
+  {
+    "src": "/photos/img-0597.jpg",
+    "title": "Above the Snowline",
+    "location": "In flight",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/10753s · ISO 80",
+    "taken": "2023-05-15"
+  }
+]

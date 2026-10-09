@@ -1,99 +1,225 @@
-"use client";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, ArrowUpRight, Github } from "lucide-react";
+import personal from "@/data/personal.json";
+import work from "@/data/work.json";
+import projects from "@/data/projects.json";
+import { getAllPosts, formatDate } from "@/lib/posts";
+import { getPhotos } from "@/lib/photos";
 
-import { useState } from "react";
-import { Github, Linkedin } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
-import WorkTimeline from "@/components/WorkTimeline";
-import Projects from "@/components/Projects";
-import HexagonBackground from "@/components/HexagonBackground";
-
-// Import JSON data
-import personalData from "@/data/personal.json";
-import workData from "@/data/work.json";
-import projectsData from "@/data/projects.json";
+function SectionHeading({
+  index,
+  title,
+  action,
+}: {
+  index: string;
+  title: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-10 flex items-end justify-between gap-4 border-b border-line pb-4">
+      <div className="flex items-baseline gap-4">
+        <span className="font-mono text-xs text-muted">{index}</span>
+        <h2 className="display text-4xl sm:text-5xl">
+          {title}
+        </h2>
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState("work");
+  const posts = getAllPosts().slice(0, 3);
+  const photos = getPhotos();
+  const cover = photos[0];
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] flex font-mono relative">
-      {/* Hexagon Background */}
-      <HexagonBackground className="fixed inset-0 z-0" />
-
-      {/* Left Sidebar */}
-      <Sidebar
-        personal={personalData}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 bg-[var(--background)]/90 backdrop-blur-xl border-b border-zinc-800 p-4 z-10">
-        <div className="text-center mb-3">
-          <h1 className="text-lg font-bold text-cyan-400">
-            {personalData.name}
-          </h1>
-          <p className="text-xs text-gray-400">
-            {"<"}
-            {personalData.title}
-            {" />"}
-          </p>
-        </div>
-
-        <p className="text-xs text-gray-300 leading-relaxed mb-3 text-center">
-          {personalData.bio}
+    <main className="mx-auto max-w-5xl px-4 sm:px-6">
+      {/* Hero */}
+      <section className="rise pt-20 pb-24 sm:pt-28 sm:pb-32">
+        <p className="mb-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+          </span>
+          {personal.currently} · {personal.location}
         </p>
-
-        <div className="flex justify-center gap-4 mb-3">
+        <h1 className="max-w-4xl display text-5xl leading-[var(--display-leading)] sm:text-7xl">
+          {personal.headline.split("—")[0]}
+          {personal.headline.includes("—") && (
+            <span className="em">
+              —{personal.headline.split("—").slice(1).join("—")}
+            </span>
+          )}
+        </h1>
+        <p className="mt-8 max-w-2xl text-lg leading-relaxed text-muted">
+          {personal.bio}
+        </p>
+        <div className="mt-10 flex flex-wrap gap-3">
+          <Link
+            href="/#work"
+            className="inline-flex items-center gap-2 rounded-pill bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg transition-opacity hover:opacity-85"
+          >
+            See my work <ArrowRight className="h-4 w-4" />
+          </Link>
           <a
-            href={personalData.github}
+            href={personal.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-xs text-gray-400 hover:text-cyan-400 transition-colors"
+            className="inline-flex items-center gap-2 rounded-pill border border-line px-5 py-2.5 text-sm transition-colors hover:border-fg"
           >
-            <Github className="w-4 h-4" />
-            GitHub
-          </a>
-          <a
-            href={personalData.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-xs text-gray-400 hover:text-cyan-400 transition-colors"
-          >
-            <Linkedin className="w-4 h-4" />
-            LinkedIn
+            <Github className="h-4 w-4" /> GitHub
           </a>
         </div>
+      </section>
 
-        <div className="flex gap-2 overflow-x-auto justify-center">
-          <button
-            onClick={() => setActiveTab("work")}
-            className={`px-4 py-1.5 rounded text-xs whitespace-nowrap ${
-              activeTab === "work"
-                ? "bg-cyan-500/10 text-cyan-400"
-                : "text-gray-400 bg-zinc-900"
-            }`}
-          >
-            Work
-          </button>
-          <button
-            onClick={() => setActiveTab("projects")}
-            className={`px-4 py-1.5 rounded text-xs whitespace-nowrap ${
-              activeTab === "projects"
-                ? "bg-cyan-500/10 text-cyan-400"
-                : "text-gray-400 bg-zinc-900"
-            }`}
-          >
-            Projects
-          </button>
+      {/* Experience */}
+      <section id="work" className="pb-28">
+        <SectionHeading index="01" title="Experience" />
+        <ol className="divide-y divide-line">
+          {work.map((job) => (
+            <li
+              key={`${job.company}-${job.period}`}
+              className="grid gap-3 py-8 first:pt-0 sm:grid-cols-[180px_1fr] sm:gap-10"
+            >
+              <p className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1.5">
+                {job.period}
+              </p>
+              <div>
+                <h3 className="text-xl font-medium">
+                  {job.title}{" "}
+                  <span className="text-muted">at</span>{" "}
+                  <span className="text-accent">{job.company}</span>
+                </h3>
+                <p className="mt-1 text-sm text-muted">{job.location}</p>
+                <p className="mt-4 leading-relaxed">{job.description}</p>
+                <p className="mt-4 font-mono text-xs text-muted">
+                  {job.tech.join("  /  ")}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Projects */}
+      <section id="projects" className="pb-28">
+        <SectionHeading index="02" title="Projects" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {projects.map((project) => {
+            const href = project.live ?? project.github;
+            const Card = href ? "a" : "div";
+            return (
+              <Card
+                key={project.name}
+                {...(href && {
+                  href,
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                })}
+                className="group flex flex-col rounded-theme border border-line bg-surface/40 p-6 transition-all hover:-translate-y-0.5 hover:border-fg/30 hover:bg-surface"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="text-lg font-medium">{project.name}</h3>
+                  {href && (
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-muted transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
+                  )}
+                </div>
+                <p className="mt-2 flex-1 leading-relaxed text-muted">
+                  {project.description}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-1.5">
+                  {project.tech.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-pill border border-line px-2.5 py-0.5 font-mono text-[11px] text-muted"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      </div>
+      </section>
 
-      {/* Main Content */}
-      <main className="flex-1 lg:ml-80 p-6 md:p-12 overflow-y-auto mt-52 lg:mt-0">
-        {activeTab === "work" && <WorkTimeline work={workData} />}
-        {activeTab === "projects" && <Projects projects={projectsData} />}
-      </main>
-    </div>
+      {/* Writing */}
+      {posts.length > 0 && (
+        <section className="pb-28">
+          <SectionHeading
+            index="03"
+            title="Writing"
+            action={
+              <Link
+                href="/blog"
+                className="flex items-center gap-1 text-sm text-muted transition-colors hover:text-accent"
+              >
+                All posts <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
+          />
+          <ul className="divide-y divide-line">
+            {posts.map((post) => (
+              <li key={post.slug}>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="group grid gap-2 py-6 first:pt-0 sm:grid-cols-[180px_1fr] sm:gap-10"
+                >
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1.5">
+                    {formatDate(post.date, "short")}
+                  </p>
+                  <div>
+                    <h3 className="display text-2xl transition-colors group-hover:text-accent">
+                      {post.title}
+                      {post.draft && (
+                        <span className="ml-3 align-middle font-sans text-[10px] font-medium uppercase tracking-widest text-accent">
+                          Draft
+                        </span>
+                      )}
+                    </h3>
+                    <p className="mt-1.5 text-muted">{post.summary}</p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Photographs */}
+      {cover && (
+        <section className="pb-28">
+          <SectionHeading index="04" title="Photographs" />
+          <Link
+            href="/photos"
+            className="group relative block aspect-[4/5] overflow-hidden rounded-theme bg-surface sm:aspect-[21/9]"
+          >
+            <Image
+              src={cover.src}
+              alt={cover.title}
+              fill
+              sizes="(min-width: 1024px) 1024px, 100vw"
+              className="object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-[1.03]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-6 text-white sm:p-10">
+              <div>
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/70">
+                  {photos.length} {photos.length === 1 ? "frame" : "frames"}
+                </p>
+                <p className="mt-2 display text-4xl sm:text-6xl">
+                  Through the lens
+                </p>
+              </div>
+              <span className="flex items-center gap-2 whitespace-nowrap text-sm text-white/80 transition-colors group-hover:text-white">
+                View gallery <ArrowRight className="h-4 w-4" />
+              </span>
+            </div>
+          </Link>
+        </section>
+      )}
+    </main>
   );
 }

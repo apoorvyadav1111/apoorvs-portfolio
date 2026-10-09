@@ -3,64 +3,177 @@
 
 @source "../../src/**/*.{js,ts,jsx,tsx,mdx}";
 
-:root {
-  --background: #121212;
-  --foreground: #ddb9b9;
+/* Theme tokens are generated from src/themes and injected by the root layout.
+   These map them onto Tailwind utilities (bg-bg, text-accent, font-display…). */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --font-sans: var(--theme-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--theme-mono), ui-monospace, monospace;
+  --radius-theme: var(--theme-radius);
+  --radius-pill: var(--theme-pill);
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: "Courier New", Courier, monospace;
-  margin: 0;
-  padding: 0;
+/* Headings: family, weight and tracking all come from the active theme */
+@utility display {
+  font-family: var(--theme-display), ui-sans-serif, sans-serif;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  text-transform: var(--display-case);
 }
 
-* {
-  box-sizing: border-box;
+/* The emphasised half of a headline */
+@utility em {
+  font-style: var(--em-style);
+  color: var(--em-color);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
-
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
 }
 
-/* Prevent horizontal scroll on mobile */
 body {
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Blinking cursor animation */
-@keyframes blink {
-  0%,
-  49% {
-    opacity: 1;
-  }
-  50%,
-  100% {
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Subtle grain so the paper background doesn't feel flat */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: var(--theme-grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes rise {
+  from {
     opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
-.animate-blink {
-  animation: blink 1s infinite;
+.rise {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Gallery resizing: photos glide to their new size and position.
+   The rest of the page swaps instantly instead of cross-fading. */
+::view-transition-group(*) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Long-form post typography */
+.prose {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--fg);
+}
+.prose > * + * {
+  margin-top: 1.25em;
+}
+.prose h2 {
+  font-family: var(--theme-display), ui-sans-serif, sans-serif;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  font-size: 1.875rem;
+  line-height: 1.2;
+  margin-top: 2.2em;
+}
+.prose h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.8em;
+}
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose strong {
+  font-weight: 600;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.4em;
+}
+.prose ul {
+  list-style: disc;
+}
+.prose ol {
+  list-style: decimal;
+}
+.prose li + li {
+  margin-top: 0.4em;
+}
+.prose li::marker {
+  color: var(--muted);
+}
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1.1em;
+  color: var(--muted);
+}
+.prose :not(pre) > code {
+  font-family: var(--theme-mono), ui-monospace, monospace;
+  font-size: 0.875em;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.prose pre {
+  font-family: var(--theme-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.65;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--theme-radius);
+  padding: 1rem 1.15rem;
+  overflow-x: auto;
+}
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.5em 0;
+}
+.prose img {
+  border-radius: var(--theme-radius);
+  max-width: 100%;
 }
