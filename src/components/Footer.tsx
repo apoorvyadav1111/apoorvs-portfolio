@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Github, Linkedin } from "lucide-react";
+import CreditsDialog from "./CreditsDialog";
 
 interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
@@ -34,9 +34,7 @@ export default function Footer({ personal }: FooterProps) {
               Claude Code
             </a>{" "}
             ·{" "}
-            <Link href="/credits" className="underline underline-offset-4 transition-colors hover:text-fg">
-              Credits
-            </Link>
+            <CreditsDialog name={personal.name} />
           </p>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>
