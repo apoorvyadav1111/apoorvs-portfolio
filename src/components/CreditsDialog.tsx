@@ -79,7 +79,7 @@ export default function CreditsDialog({ name }: { name: string }) {
         <div className="overflow-y-auto px-6 py-5 text-sm">
           <div className="space-y-3 leading-relaxed">
             <p>
-              <span className="font-medium">Words and photographs</span> by {name}.
+              <span className="font-medium">Photographs</span> by {name}.
             </p>
             <p>
               <span className="font-medium">The site</span> was designed and built together by {name} and{" "}
