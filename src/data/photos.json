@@ -522,5 +522,111 @@
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/10753s · ISO 80",
     "taken": "2023-05-15"
+  },
+  {
+    "src": "/photos/20220225-153842.jpg",
+    "title": "Town under the snowline",
+    "location": "Joshimath, Uttarakhand",
+    "width": 2560,
+    "height": 1440,
+    "taken": "2022-02-25",
+    "coords": [
+      30.56,
+      79.56
+    ]
+  },
+  {
+    "src": "/photos/c6ce5373-0720-4661-83d4-fa8a181e6827.jpg",
+    "title": "Crystal jellies",
+    "location": "Monterey Bay Aquarium",
+    "width": 1920,
+    "height": 2560,
+    "coords": [
+      36.62,
+      -121.9
+    ]
+  },
+  {
+    "src": "/photos/effects.jpg",
+    "title": "Palm over the cove",
+    "location": "Gokarna, Karnataka",
+    "width": 2560,
+    "height": 1181,
+    "taken": "2020-02-22",
+    "coords": [
+      14.52,
+      74.31
+    ]
+  },
+  {
+    "src": "/photos/dsc01366.jpg",
+    "title": "Above the clouds",
+    "location": "Auli, Uttarakhand",
+    "width": 2560,
+    "height": 1920,
+    "taken": "2022-02-27",
+    "coords": [
+      30.53,
+      79.57
+    ]
+  },
+  {
+    "src": "/photos/20220701-174728.jpg",
+    "title": "Monsoon at the sea link",
+    "location": "Bandra–Worli Sea Link, Mumbai",
+    "width": 1440,
+    "height": 2560,
+    "taken": "2022-07-01",
+    "coords": [
+      19.03,
+      72.82
+    ]
+  },
+  {
+    "src": "/photos/img-3112.jpg",
+    "title": "Last light in the pines",
+    "location": "Lake Tahoe",
+    "width": 2560,
+    "height": 1920,
+    "taken": "2024-12-28",
+    "coords": [
+      39.1,
+      -120.03
+    ]
+  },
+  {
+    "src": "/photos/dsc01450.jpg",
+    "title": "Where two rivers meet",
+    "location": "Devprayag, Uttarakhand",
+    "width": 2560,
+    "height": 1920,
+    "taken": "2022-02-28",
+    "coords": [
+      30.15,
+      78.6
+    ]
+  },
+  {
+    "src": "/photos/d8d319ce-f1b1-4471-b36d-12062a65fba8.jpg",
+    "title": "In the dark tank",
+    "location": "Monterey Bay Aquarium",
+    "width": 1920,
+    "height": 2560,
+    "coords": [
+      36.62,
+      -121.9
+    ]
+  },
+  {
+    "src": "/photos/20220224-162745.jpg",
+    "title": "The road up the gorge",
+    "location": "Alaknanda valley, Uttarakhand",
+    "width": 1440,
+    "height": 2560,
+    "taken": "2022-02-24",
+    "coords": [
+      30.25,
+      78.75
+    ]
   }
 ]
