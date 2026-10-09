@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { Monitor, Moon, RotateCcw, Shuffle, Sun } from "lucide-react";
-import { DEFAULT_THEME, FONT_CHOICES, THEMES } from "@/themes";
+import { DEFAULT_MODE, DEFAULT_THEME, FONT_CHOICES, THEMES } from "@/themes";
 
 // Visitor-facing appearance controls: theme, font and light/dark mode.
 // Choices live as attributes on <html> (read by the CSS from themeCss()) and
@@ -17,14 +17,14 @@ interface Appearance {
   resolved: "light" | "dark";
 }
 
-const SERVER_KEY = `${DEFAULT_THEME}|theme|system|light`;
+const SERVER_KEY = `${DEFAULT_THEME}|theme|${DEFAULT_MODE}|${DEFAULT_MODE === "light" ? "light" : "dark"}`;
 
 function readKey() {
   const d = document.documentElement;
-  let mode: Mode = "system";
+  let mode: Mode = DEFAULT_MODE;
   try {
     const stored = localStorage.getItem("theme");
-    if (stored === "light" || stored === "dark") mode = stored;
+    if (stored === "light" || stored === "dark" || stored === "system") mode = stored;
   } catch {}
   return `${d.dataset.palette ?? DEFAULT_THEME}|${d.dataset.font ?? "theme"}|${mode}|${d.dataset.theme ?? "light"}`;
 }
@@ -89,7 +89,8 @@ function setFont(id: string) {
 }
 
 function setMode(mode: Mode) {
-  save("theme", mode === "system" ? null : mode);
+  // Saved explicitly, even "system": an empty setting means the site default
+  save("theme", mode === DEFAULT_MODE ? null : mode);
   const resolved = mode === "system" ? (systemDark() ? "dark" : "light") : mode;
   document.documentElement.setAttribute("data-theme", resolved);
 }
@@ -154,12 +155,12 @@ export default function AppearanceMenu() {
     transition(() => {
       setPalette(DEFAULT_THEME);
       setFont("theme");
-      setMode("system");
+      setMode(DEFAULT_MODE);
       save("palette", null);
     }, pointFrom(e));
 
   const isDefault =
-    appearance.palette === DEFAULT_THEME && appearance.font === "theme" && appearance.mode === "system";
+    appearance.palette === DEFAULT_THEME && appearance.font === "theme" && appearance.mode === DEFAULT_MODE;
 
   return (
     <div className="relative ml-1">

@@ -3,7 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import personal from "@/data/personal.json";
 import { fontVariables } from "@/themes/fonts";
-import { DEFAULT_THEME, themeCss, themeInitScript } from "@/themes";
+import { DEFAULT_MODE, DEFAULT_THEME, themeCss, themeInitScript } from "@/themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +32,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
       data-palette={DEFAULT_THEME}
+      data-theme={DEFAULT_MODE === "light" ? "light" : "dark"}
       className={fontVariables}
     >
       <head>

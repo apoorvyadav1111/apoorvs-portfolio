@@ -15,6 +15,8 @@ import { graphite } from "./graphite";
 
 export const THEMES: Theme[] = [trail, riso, swiss, graphite];
 export const DEFAULT_THEME = "trail";
+// What first-time visitors see: "dark", "light", or "system" (follow the device)
+export const DEFAULT_MODE: "light" | "dark" | "system" = "dark";
 
 export type { Theme, Palette };
 
@@ -76,9 +78,10 @@ export function themeCss() {
     .join("\n");
 }
 
-// Runs before first paint: restores the visitor's theme, font and light/dark mode.
+// Runs before first paint: restores the visitor's theme, font and light/dark
+// mode. A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
 export const themeInitScript = `(function(){var d=document.documentElement,p,f,m;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme")}catch(e){}if(${JSON.stringify(
   THEMES.map((t) => t.id),
 )}.indexOf(p)>-1)d.dataset.palette=p;if(${JSON.stringify(
   FONT_CHOICES.filter((c) => c.display).map((c) => c.id),
-)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m})()`;
+)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m})()`;
