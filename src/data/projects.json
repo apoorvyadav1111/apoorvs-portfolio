@@ -10,6 +10,28 @@
     "github": "https://github.com/DiceDB/dice/pulls?q=is%3Apr+author%3Aapoorvyadav1111+is%3Amerged+"
   },
   {
+    "name": "Analyzing Open Source Communities",
+    "description": "With one teammate, collected and analyzed 500K records from Reddit and GitHub across 15 developer communities, scoring sentiment with VADER and toxicity with a moderation API, then built a Streamlit dashboard to show how welcoming each community is to newcomers.",
+    "tech": [
+      "Python",
+      "PostgreSQL",
+      "Faktory",
+      "Streamlit"
+    ],
+    "github": "https://github.com/apoorvyadav1111/analyze-open-source-communities"
+  },
+  {
+    "name": "Document Search with Lucene",
+    "description": "Two Java apps exploring how search engines work: an indexer that extracts text from a folder of documents with Apache Tika and indexes it with Lucene, and a searcher that queries the index using Lucene's default BM25 ranking.",
+    "tech": [
+      "Java",
+      "Apache Lucene",
+      "Apache Tika",
+      "Maven"
+    ],
+    "github": "https://github.com/apoorvyadav1111/lucune-search-basics"
+  },
+  {
     "name": "Http Server using Go",
     "description": "A simple http server built from scratch using Go.",
     "tech": [
@@ -19,19 +41,6 @@
     ],
     "github": "https://github.com/apoorvyadav1111/go-http-server",
     "live": "https://github.com/apoorvyadav1111/go-http-server"
-  },
-  {
-    "name": "Redis Server",
-    "description": "Redis server built using Python, asyncio and sockets.",
-    "tech": [
-      "Python",
-      "Sockets",
-      "Redis",
-      "Asyncio",
-      "Multithreading"
-    ],
-    "github": "https://github.com/apoorvyadav1111/python-redis-server",
-    "live": "https://github.com/apoorvyadav1111/python-redis-server"
   },
   {
     "name": "Codespeed",
@@ -45,19 +54,6 @@
     ],
     "github": "https://github.com/apoorvyadav1111/codespeed",
     "live": "https://codespeed.vercel.app"
-  },
-  {
-    "name": "Smart Note Taking App",
-    "description": "A web app that helps users take notes and organize them.",
-    "tech": [
-      "React",
-      "TypeScript",
-      "Next.js",
-      "Tailwind",
-      "Convex"
-    ],
-    "github": "https://github.com/apoorvyadav1111/Motion",
-    "live": "https://takesmartnotes.vercel.app"
   },
   {
     "name": "AgilityCoach",
