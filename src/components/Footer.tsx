@@ -23,7 +23,7 @@ export default function Footer({ personal }: FooterProps) {
     <footer className="border-t border-line">
       <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-10 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="space-y-1">
-          <p>
+          <div>
             Built by {personal.name} and{" "}
             <a
               href="https://claude.com/claude-code"
@@ -35,7 +35,7 @@ export default function Footer({ personal }: FooterProps) {
             </a>{" "}
             ·{" "}
             <CreditsDialog name={personal.name} />
-          </p>
+          </div>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
