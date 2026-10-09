@@ -199,7 +199,7 @@ export default function AppearanceMenu() {
           </div>
 
           <Section label="Theme">
-            <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Theme">
+            <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Theme">
               {THEMES.map((t) => {
                 const p = t[appearance.resolved];
                 const active = appearance.palette === t.id;
@@ -230,7 +230,7 @@ export default function AppearanceMenu() {
                       </span>
                       <span className="h-1.5 w-8" style={{ background: p.accent, borderRadius: t.pill }} />
                     </span>
-                    <span className={`mt-1.5 block text-xs ${active ? "text-fg" : "text-muted"}`}>{t.name}</span>
+                    <span className={`mt-1.5 block truncate text-xs ${active ? "text-fg" : "text-muted"}`}>{t.name}</span>
                   </button>
                 );
               })}

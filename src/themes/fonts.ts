@@ -11,6 +11,7 @@ import {
   Inter,
   Instrument_Sans,
   JetBrains_Mono,
+  Playfair_Display,
   Source_Serif_4,
   Space_Grotesk,
   Space_Mono,
@@ -63,6 +64,12 @@ const plexMono = IBM_Plex_Mono({
   preload: false,
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  preload: false,
+});
+
 // Extra faces for the Appearance menu's font choices (see FONT_CHOICES)
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -94,6 +101,7 @@ export const fontVariables = [
   fraunces,
   sourceSerif,
   atkinson,
+  playfair,
 ]
   .map((f) => f.variable)
   .join(" ");

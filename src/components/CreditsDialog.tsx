@@ -19,6 +19,7 @@ const SECTIONS: { title: string; items: { name: string; by: string; href: string
       { name: "Archivo", by: "Omnibus-Type", href: "https://fonts.google.com/specimen/Archivo" },
       { name: "Inter", by: "Rasmus Andersson", href: "https://rsms.me/inter/" },
       { name: "IBM Plex Mono", by: "IBM", href: "https://www.ibm.com/plex/" },
+      { name: "Playfair Display", by: "Claus Eggers Sørensen", href: "https://fonts.google.com/specimen/Playfair+Display" },
       { name: "Fraunces", by: "Undercase Type", href: "https://fonts.google.com/specimen/Fraunces" },
       { name: "Source Serif 4", by: "Adobe", href: "https://fonts.google.com/specimen/Source+Serif+4" },
       { name: "Atkinson Hyperlegible", by: "Braille Institute", href: "https://www.brailleinstitute.org/freefont/" },

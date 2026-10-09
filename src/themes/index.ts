@@ -12,8 +12,9 @@ import { trail } from "./trail";
 import { riso } from "./riso";
 import { swiss } from "./swiss";
 import { graphite } from "./graphite";
+import { gazette } from "./gazette";
 
-export const THEMES: Theme[] = [trail, riso, swiss, graphite];
+export const THEMES: Theme[] = [trail, riso, swiss, graphite, gazette];
 export const DEFAULT_THEME = "trail";
 // What first-time visitors see: "dark", "light", or "system" (follow the device)
 export const DEFAULT_MODE: "light" | "dark" | "system" = "dark";
