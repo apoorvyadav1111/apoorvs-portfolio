@@ -32,15 +32,15 @@
     "github": "https://github.com/apoorvyadav1111/lucune-search-basics"
   },
   {
-    "name": "Http Server using Go",
-    "description": "A simple http server built from scratch using Go.",
+    "name": "Karya",
+    "description": "A Jira-style project management app with auth, teams and roles, task assignment, bug tracking and effort tracking. Designed the GraphQL schema so that deleting a user or card never leaves orphaned references behind.",
     "tech": [
-      "Go",
-      "HTTP",
-      "Sockets"
+      "Vue",
+      "Node.js",
+      "MongoDB",
+      "Apollo GraphQL"
     ],
-    "github": "https://github.com/apoorvyadav1111/go-http-server",
-    "live": "https://github.com/apoorvyadav1111/go-http-server"
+    "github": "https://github.com/apoorvyadav1111/karya-server"
   },
   {
     "name": "Codespeed",
@@ -63,8 +63,6 @@
       "OpenCV",
       "Flask",
       "Streamlit"
-    ],
-    "github": "https://github.com/apoorvyadav1111/agilitycoach",
-    "live": "https://github.com/apoorvyadav1111/agilitycoach"
+    ]
   }
 ]
