@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeToggle from "./ThemeToggle";
+import AppearanceMenu from "./AppearanceMenu";
 
 // `wide` links are home-page anchors, hidden on phones to keep the bar on one line
 const NAV = [
@@ -50,7 +50,7 @@ export default function Header({ name }: { name: string }) {
               </Link>
             );
           })}
-          <ThemeToggle />
+          <AppearanceMenu />
         </nav>
       </div>
     </header>

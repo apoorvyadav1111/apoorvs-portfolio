@@ -45,3 +45,4 @@ Add `"draft": true` to hide an entry from the live site.
 - Work history: `src/data/work.json`
 - Projects: `src/data/projects.json`
 - Look and feel: `src/themes/` (change `DEFAULT_THEME` in `src/themes/index.ts`)
+- Font choices in the Appearance menu: `FONT_CHOICES` in `src/themes/index.ts` (new faces go in `src/themes/fonts.ts`)

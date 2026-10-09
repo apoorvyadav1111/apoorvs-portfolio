@@ -1,6 +1,4 @@
 import { Github, Linkedin } from "lucide-react";
-import ThemePicker from "./ThemePicker";
-import { THEMES } from "@/themes";
 
 interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
@@ -31,14 +29,6 @@ export default function Footer({ personal }: FooterProps) {
               {label}
             </a>
           ))}
-          <span className="hidden h-4 w-px bg-line sm:block" />
-          <ThemePicker
-            themes={THEMES.map((t) => ({
-              id: t.id,
-              name: t.name,
-              swatch: [t.dark.bg, t.dark.accent],
-            }))}
-          />
         </div>
       </div>
     </footer>

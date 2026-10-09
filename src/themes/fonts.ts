@@ -1,14 +1,17 @@
-// Every font any theme can use. next/font needs literal options, so each font
+// Every font any theme or font choice can use. next/font needs literal options, so each font
 // is declared here by hand. Fonts are only downloaded when a theme uses them;
 // `preload: true` is reserved for the default theme's fonts.
 import {
   Archivo,
+  Atkinson_Hyperlegible,
   Bricolage_Grotesque,
   DM_Sans,
+  Fraunces,
   IBM_Plex_Mono,
   Inter,
   Instrument_Sans,
   JetBrains_Mono,
+  Source_Serif_4,
   Space_Grotesk,
   Space_Mono,
 } from "next/font/google";
@@ -60,6 +63,24 @@ const plexMono = IBM_Plex_Mono({
   preload: false,
 });
 
+// Extra faces for the Appearance menu's font choices (see FONT_CHOICES)
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  preload: false,
+});
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-source-serif",
+  preload: false,
+});
+const atkinson = Atkinson_Hyperlegible({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-atkinson",
+  preload: false,
+});
+
 export const fontVariables = [
   bricolage,
   instrumentSans,
@@ -70,6 +91,9 @@ export const fontVariables = [
   archivo,
   inter,
   plexMono,
+  fraunces,
+  sourceSerif,
+  atkinson,
 ]
   .map((f) => f.variable)
   .join(" ");
