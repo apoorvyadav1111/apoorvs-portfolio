@@ -9,6 +9,7 @@ import type { Photo } from "@/lib/photos";
 // A spinning globe drawn from dots (or characters, with the Terminal font)
 // with photos pinned at their approximate locations. Zoomed out they glow
 // as points; zoom in and they become thumbnails that open the viewer.
+// The side of the Earth in daylight right now is lit in sun-yellow.
 //
 // Projection: orthographic. A point's unit vector is rotated by `yaw`
 // (around the vertical axis) then `pitch` (around the horizontal one);
@@ -68,6 +69,24 @@ interface Cluster {
   y: number;
 }
 
+// Where the sun is directly overhead right now, as a unit vector. NOAA's
+// approximation: declination from the day of the year, longitude from UTC
+// time plus the "equation of time". Good to about a degree.
+function sunVector(date: Date): Vec {
+  const start = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const dayOfYear = Math.floor((date.getTime() - start) / 86400000);
+  const hours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+  const g = ((2 * Math.PI) / 365) * (dayOfYear - 1 + (hours - 12) / 24);
+  const declination =
+    0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) +
+    0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+  const equationOfTime =
+    229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+  return toVec(declination / DEG, -15 * (hours - 12 + equationOfTime / 60));
+}
+
+const TWILIGHT = 0.1; // sun up to ~6° below the horizon still glows faintly
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const angleDiff = (a: number, b: number) => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 
@@ -118,13 +137,16 @@ export default function PhotoGlobe({
     const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // Theme colors and mode, refreshed whenever the Appearance menu changes them
-    let colors = { muted: "#888", accent: "#f80", surface: "#222", line: "#333" };
+    let colors = { muted: "#888", accent: "#f80", surface: "#222", line: "#333", sun: "#ffcc4d" };
     let charMode = false;
     let monoFont = "monospace";
     const readTheme = () => {
       const css = getComputedStyle(document.documentElement);
       const v = (n: string) => css.getPropertyValue(n).trim();
-      colors = { muted: v("--muted"), accent: v("--accent"), surface: v("--surface"), line: v("--line") };
+      const root = document.documentElement.dataset;
+      // Sunlight: warm yellow, deeper on light backgrounds; Graphite stays monochrome
+      const sun = root.palette === "graphite" ? v("--fg") : root.theme === "light" ? "#c98a00" : "#ffcc4d";
+      colors = { muted: v("--muted"), accent: v("--accent"), surface: v("--surface"), line: v("--line"), sun };
       charMode = document.documentElement.dataset.font === "terminal";
       monoFont = v("--theme-mono") || "monospace";
       atlasKey = "";
@@ -137,19 +159,21 @@ export default function PhotoGlobe({
     let atlasKey = "";
     let cell = 0;
     const buildAtlas = (px: number) => {
-      const key = `${px}|${colors.muted}|${monoFont}`;
+      const key = `${px}|${colors.muted}|${colors.sun}|${monoFont}`;
       if (key === atlasKey) return;
       atlasKey = key;
       cell = Math.ceil(px * 1.05);
       atlas.width = cell * CHARS.length;
-      atlas.height = cell;
+      atlas.height = cell * 2; // row 0: night (muted), row 1: daylight (sun)
       const a = atlas.getContext("2d")!;
       a.clearRect(0, 0, atlas.width, atlas.height);
-      a.fillStyle = colors.muted;
       a.font = `${px}px ${monoFont}`;
       a.textAlign = "center";
       a.textBaseline = "middle";
-      for (let i = 0; i < CHARS.length; i++) a.fillText(CHARS[i], i * cell + cell / 2, cell / 2);
+      [colors.muted, colors.sun].forEach((color, row) => {
+        a.fillStyle = color;
+        for (let i = 0; i < CHARS.length; i++) a.fillText(CHARS[i], i * cell + cell / 2, row * cell + cell / 2);
+      });
     };
     readTheme();
 
@@ -170,12 +194,17 @@ export default function PhotoGlobe({
     resizeObserver.observe(el);
     resize();
 
-    // Scratch buffers for the visible dots, grouped by shade (grown for the fine set)
+    // Scratch buffers for the visible dots, grouped by shade (grown for the fine
+    // set). Buckets 0…SHADES-1 are night, shaded by how directly they face the
+    // viewer; SHADES…2*SHADES-1 are daylight, shaded by how high the sun is.
+    const BUCKETS = SHADES * 2;
     let n = LAND.length / 3;
-    let bx = Array.from({ length: SHADES }, () => new Float32Array(n));
-    let by = Array.from({ length: SHADES }, () => new Float32Array(n));
-    const counts = new Int32Array(SHADES);
-    let grid = new Int8Array(0); // character mode: brightest shade per text cell
+    let bx = Array.from({ length: BUCKETS }, () => new Float32Array(n));
+    let by = Array.from({ length: BUCKETS }, () => new Float32Array(n));
+    const counts = new Int32Array(BUCKETS);
+    let grid = new Int8Array(0); // character mode: brightest bucket per text cell
+    let sun = sunVector(new Date());
+    let sunAt = 0;
 
     const project = (v: Vec | Float32Array, o = 0) => {
       const cy = Math.cos(s.yaw), sy = Math.sin(s.yaw);
@@ -232,8 +261,12 @@ export default function PhotoGlobe({
       const land = s.zoom >= FINE_FROM && fineLand ? fineLand : LAND;
       if (land.length / 3 > n) {
         n = land.length / 3;
-        bx = Array.from({ length: SHADES }, () => new Float32Array(n));
-        by = Array.from({ length: SHADES }, () => new Float32Array(n));
+        bx = Array.from({ length: BUCKETS }, () => new Float32Array(n));
+        by = Array.from({ length: BUCKETS }, () => new Float32Array(n));
+      }
+      if (now - sunAt > 60_000) {
+        sun = sunVector(new Date()); // the terminator moves ~1° every 4 minutes
+        sunAt = now;
       }
       counts.fill(0);
       const cyw = Math.cos(s.yaw), syw = Math.sin(s.yaw);
@@ -246,9 +279,14 @@ export default function PhotoGlobe({
         const sx = w / 2 + R * x1;
         const sy = h / 2 - R * (land[i + 1] * cp - z1 * sp);
         if (sx < -8 || sx > w + 8 || sy < -8 || sy > h + 8) continue;
-        const shade = Math.min(SHADES - 1, Math.floor(z2 * SHADES));
-        bx[shade][counts[shade]] = sx;
-        by[shade][counts[shade]++] = sy;
+        // Height of the sun above this spot's horizon (sine of its elevation)
+        const sunUp = land[i] * sun[0] + land[i + 1] * sun[1] + land[i + 2] * sun[2];
+        const bucket =
+          sunUp > -TWILIGHT
+            ? SHADES + Math.min(SHADES - 1, Math.floor(Math.sqrt((sunUp + TWILIGHT) / (1 + TWILIGHT)) * SHADES))
+            : Math.min(SHADES - 1, Math.floor(z2 * SHADES));
+        bx[bucket][counts[bucket]] = sx;
+        by[bucket][counts[bucket]++] = sy;
       }
       const size = land === LAND ? clamp(1.5 + s.zoom * 0.18, 1.5, 3) : clamp(1.2 + s.zoom * 0.12, 1.5, 3.5);
       if (charMode) {
@@ -259,7 +297,7 @@ export default function PhotoGlobe({
         const rows = Math.ceil(h / cell);
         if (grid.length < cols * rows) grid = new Int8Array(cols * rows);
         grid.fill(-1, 0, cols * rows);
-        for (let b = 0; b < SHADES; b++)
+        for (let b = 0; b < BUCKETS; b++)
           for (let i = 0; i < counts[b]; i++) {
             const gx = Math.floor(bx[b][i] / cell);
             const gy = Math.floor(by[b][i] / cell);
@@ -276,15 +314,23 @@ export default function PhotoGlobe({
               if (Math.hypot(x + cell / 2 - w / 2, y + cell / 2 - h / 2) > R) continue;
               ctx.globalAlpha = 0.22;
               ctx.drawImage(atlas, 0, 0, cell, cell, x, y, cell, cell);
+            } else if (b >= SHADES) {
+              // Daylight: denser glyphs the higher the sun
+              const lit = b - SHADES;
+              ctx.globalAlpha = 0.45 + (0.55 * lit) / (SHADES - 1);
+              ctx.drawImage(atlas, lit * cell, cell, cell, cell, x, y, cell, cell);
             } else {
-              ctx.globalAlpha = 0.45 + (0.55 * b) / (SHADES - 1);
-              ctx.drawImage(atlas, b * cell, 0, cell, cell, x, y, cell, cell);
+              // Night: only the faint glyphs
+              ctx.globalAlpha = 0.3 + (0.35 * b) / (SHADES - 1);
+              ctx.drawImage(atlas, Math.min(b, 3) * cell, 0, cell, cell, x, y, cell, cell);
             }
           }
       } else {
-        ctx.fillStyle = colors.muted;
-        for (let b = 0; b < SHADES; b++) {
-          ctx.globalAlpha = 0.15 + (0.85 * b) / (SHADES - 1);
+        for (let b = 0; b < BUCKETS; b++) {
+          const day = b >= SHADES;
+          const shade = day ? b - SHADES : b;
+          ctx.fillStyle = day ? colors.sun : colors.muted;
+          ctx.globalAlpha = day ? 0.35 + (0.65 * shade) / (SHADES - 1) : 0.12 + (0.6 * shade) / (SHADES - 1);
           for (let i = 0; i < counts[b]; i++) ctx.fillRect(bx[b][i] - size / 2, by[b][i] - size / 2, size, size);
         }
       }
