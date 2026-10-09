@@ -15,3 +15,7 @@ But what if you want to search by similarity, like “find images that look like
 That’s where vector databases shine. They store data as high-dimensional vectors (numerical representations of images, text, audio, etc.) and use algorithms like approximate nearest neighbor to quickly find “closest” matches.
 This makes them essential for powering AI and LLM apps, recommendation systems, and semantic search where relevance isn’t about exact matches but about closeness in meaning. Think of it as moving from keyword search to concept search.
 If you would like to read more about them, I have shared the resource in the comment
+
+## References
+
+- [What is a Vector Database & How Does it Work?](https://www.pinecone.io/learn/vector-database/) — Pinecone

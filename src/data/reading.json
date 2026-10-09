@@ -1,17 +1,5 @@
 [
   {
-    "title": "Behind the Scenes: Building a Robust Ads Event Processing Pipeline",
-    "url": "https://netflixtechblog.com/behind-the-scenes-building-a-robust-ads-event-processing-pipeline-e4e86caf9249",
-    "author": "Kinesh Satiya",
-    "date": "2026-10-09",
-    "summary": "How Netflix's ad event pipeline evolved from the 2022 ad-supported plan with Microsoft to an in-house ads platform. A centralized Ads Event Publisher now decrypts, enriches and publishes ad telemetry under one data contract, and consumers like frequency capping, an Ads Sessionizer and the vendor event handler sit downstream of it. Apache Flink jobs process events in real time and write metrics to Apache Druid, backed by an offline job that corrects inaccuracies.",
-    "tags": [
-      "streaming",
-      "kafka",
-      "flink"
-    ]
-  },
-  {
     "title": "Redis new data structure: the HyperLogLog",
     "url": "https://antirez.com/news/75",
     "author": "antirez",
@@ -84,6 +72,18 @@
     ]
   },
   {
+    "title": "What is a Vector Database & How Does it Work? Use Cases + Examples",
+    "url": "https://www.pinecone.io/learn/vector-database/",
+    "author": "Roie Schwaber-Cohen",
+    "date": "2025-09-26",
+    "summary": "Explains how vector databases store and index embeddings so they can find the items most similar to a query, instead of matching exact values the way traditional databases do. Similarity search relies on approximate nearest neighbor algorithms such as HNSW, product quantization and locality-sensitive hashing, which trade a little accuracy for a lot of speed. It also covers what a full database adds over a standalone index like FAISS: metadata filtering, real-time updates, sharding and replication, backups and access control.",
+    "tags": [
+      "databases",
+      "ai",
+      "search"
+    ]
+  },
+  {
     "title": "Did you mean \"Galene\"? Introducing LinkedIn's new search architecture",
     "url": "https://engineering.linkedin.com/search/did-you-mean-galene",
     "author": "Sriram Sankar, Asif Makhani",
@@ -140,6 +140,18 @@
       "search",
       "lucene",
       "system-design"
+    ]
+  },
+  {
+    "title": "Behind the Scenes: Building a Robust Ads Event Processing Pipeline",
+    "url": "https://netflixtechblog.com/behind-the-scenes-building-a-robust-ads-event-processing-pipeline-e4e86caf9249",
+    "author": "Kinesh Satiya",
+    "date": "2025-08-21",
+    "summary": "How Netflix's ad event pipeline evolved from the 2022 ad-supported plan with Microsoft to an in-house ads platform. A centralized Ads Event Publisher now decrypts, enriches and publishes ad telemetry under one data contract, and consumers like frequency capping, an Ads Sessionizer and the vendor event handler sit downstream of it. Apache Flink jobs process events in real time and write metrics to Apache Druid, backed by an offline job that corrects inaccuracies.",
+    "tags": [
+      "streaming",
+      "kafka",
+      "flink"
     ]
   }
 ]
