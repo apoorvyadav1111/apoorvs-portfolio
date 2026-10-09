@@ -6,6 +6,7 @@ export interface Palette {
   line: string; // borders and rules
   accent: string;
   accentFg: string; // text drawn on top of `accent`
+  sun?: string; // daylight on the photo globe; defaults to `fg` (monochrome)
 }
 
 export interface Theme {

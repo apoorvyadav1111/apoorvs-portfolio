@@ -22,6 +22,7 @@ export const riso: Theme = {
     line: "#d3d2e3",
     accent: "#e8357a",
     accentFg: "#ffffff",
+    sun: "#b89600",
   },
   dark: {
     bg: "#17163d",
@@ -31,5 +32,6 @@ export const riso: Theme = {
     line: "#2f2e66",
     accent: "#ff6aa2",
     accentFg: "#17163d",
+    sun: "#ffe800",
   },
 };

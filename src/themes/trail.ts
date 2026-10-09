@@ -22,6 +22,7 @@ export const trail: Theme = {
     line: "#c4ccb8",
     accent: "#9a5b00",
     accentFg: "#f7f3e6",
+    sun: "#b8902a",
   },
   dark: {
     bg: "#11211a",
@@ -31,5 +32,6 @@ export const trail: Theme = {
     line: "#26402f",
     accent: "#f2b632",
     accentFg: "#11211a",
+    sun: "#f3e3a8",
   },
 };

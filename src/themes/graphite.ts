@@ -25,6 +25,7 @@ export const graphite: Theme = {
     line: "#d4d4d4",
     accent: "#131313",
     accentFg: "#f4f4f4",
+    sun: "#4d4d4d",
   },
   dark: {
     bg: "#101010",
@@ -34,5 +35,6 @@ export const graphite: Theme = {
     line: "#2b2b2b",
     accent: "#ececec",
     accentFg: "#101010",
+    sun: "#bdbdbd",
   },
 };

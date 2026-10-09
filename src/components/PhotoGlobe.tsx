@@ -9,7 +9,7 @@ import type { Photo } from "@/lib/photos";
 // A spinning globe drawn from dots (or characters, with the Terminal font)
 // with photos pinned at their approximate locations. Zoomed out they glow
 // as points; zoom in and they become thumbnails that open the viewer.
-// The side of the Earth in daylight right now is lit in sun-yellow.
+// The side of the Earth in daylight right now is lit in the theme's sunlight color.
 //
 // Projection: orthographic. A point's unit vector is rotated by `yaw`
 // (around the vertical axis) then `pitch` (around the horizontal one);
@@ -143,10 +143,8 @@ export default function PhotoGlobe({
     const readTheme = () => {
       const css = getComputedStyle(document.documentElement);
       const v = (n: string) => css.getPropertyValue(n).trim();
-      const root = document.documentElement.dataset;
-      // Sunlight: warm yellow, deeper on light backgrounds; Graphite stays monochrome
-      const sun = root.palette === "graphite" ? v("--fg") : root.theme === "light" ? "#c98a00" : "#ffcc4d";
-      colors = { muted: v("--muted"), accent: v("--accent"), surface: v("--surface"), line: v("--line"), sun };
+      // Sunlight comes from the theme (its `sun` color, or its text color)
+      colors = { muted: v("--muted"), accent: v("--accent"), surface: v("--surface"), line: v("--line"), sun: v("--sun") || v("--fg") };
       charMode = document.documentElement.dataset.font === "terminal";
       monoFont = v("--theme-mono") || "monospace";
       atlasKey = "";

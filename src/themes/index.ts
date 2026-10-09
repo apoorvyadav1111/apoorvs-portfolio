@@ -39,7 +39,7 @@ export const FONT_CHOICES: FontChoice[] = [
 ];
 
 function paletteVars(p: Palette) {
-  return `--bg:${p.bg};--surface:${p.surface};--fg:${p.fg};--muted:${p.muted};--line:${p.line};--accent:${p.accent};--accent-fg:${p.accentFg};`;
+  return `--bg:${p.bg};--surface:${p.surface};--fg:${p.fg};--muted:${p.muted};--line:${p.line};--accent:${p.accent};--accent-fg:${p.accentFg};--sun:${p.sun ?? p.fg};`;
 }
 
 // Compiles every registered theme into CSS custom properties, scoped by
