@@ -3,7 +3,7 @@ import personal from "@/data/personal.json";
 import { getAllPosts } from "@/lib/posts";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages = ["", "/blog", "/reading", "/photos"].map((path) => ({
+  const pages = ["", "/blog", "/reading", "/photos", "/credits"].map((path) => ({
     url: `${personal.url}${path}`,
   }));
   const posts = getAllPosts().map((post) => ({

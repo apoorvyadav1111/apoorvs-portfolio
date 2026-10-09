@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Github, Linkedin } from "lucide-react";
 
 interface FooterProps {
@@ -21,7 +22,24 @@ export default function Footer({ personal }: FooterProps) {
   return (
     <footer className="border-t border-line">
       <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-10 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p>Last updated {lastUpdated}</p>
+        <div className="space-y-1">
+          <p>
+            Built by {personal.name} and{" "}
+            <a
+              href="https://claude.com/claude-code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 transition-colors hover:text-fg"
+            >
+              Claude Code
+            </a>{" "}
+            ·{" "}
+            <Link href="/credits" className="underline underline-offset-4 transition-colors hover:text-fg">
+              Credits
+            </Link>
+          </p>
+          <p className="text-xs">Last updated {lastUpdated}</p>
+        </div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           {links.map(({ href, label, icon: Icon }) => (
             <a
