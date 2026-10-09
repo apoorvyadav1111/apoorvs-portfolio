@@ -1,9 +1,17 @@
 import { Github, Linkedin } from "lucide-react";
+import fs from "node:fs";
+import path from "node:path";
 import CreditsDialog from "./CreditsDialog";
+import MakeYourOwnDialog from "./MakeYourOwnDialog";
 
 interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
 }
+
+// The "Make one for yourself" prompt, editable as plain text
+const makeYourOwnPrompt = fs
+  .readFileSync(path.join(process.cwd(), "src/content/make-your-own-prompt.md"), "utf8")
+  .trim();
 
 // Pages are pre-rendered at deploy time, so this is the date of the last deploy
 const lastUpdated = new Date().toLocaleDateString("en-US", {
@@ -35,6 +43,9 @@ export default function Footer({ personal }: FooterProps) {
             </a>{" "}
             ·{" "}
             <CreditsDialog name={personal.name} />
+          </div>
+          <div>
+            <MakeYourOwnDialog prompt={makeYourOwnPrompt} />
           </div>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>
