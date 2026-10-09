@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Github } from "lucide-react";
 import personal from "@/data/personal.json";
 import work from "@/data/work.json";
+import education from "@/data/education.json";
 import projects from "@/data/projects.json";
 import { getAllPosts, formatDate } from "@/lib/posts";
 import { getPhotos } from "@/lib/photos";
@@ -93,7 +94,14 @@ export default function Home() {
                   <span className="text-accent">{job.company}</span>
                 </h3>
                 <p className="mt-1 text-sm text-muted">{job.location}</p>
-                <p className="mt-4 leading-relaxed">{job.description}</p>
+                <ul className="mt-4 space-y-2.5 leading-relaxed">
+                  {job.highlights.map((point) => (
+                    <li key={point} className="relative pl-5">
+                      <span aria-hidden className="absolute left-0 top-[0.7em] h-1 w-2.5 rounded-pill bg-accent/60" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
                 <p className="mt-4 font-mono text-xs text-muted">
                   {job.tech.join("  /  ")}
                 </p>
@@ -101,6 +109,25 @@ export default function Home() {
             </li>
           ))}
         </ol>
+
+        <h3 className="mt-14 mb-2 border-b border-line pb-3 font-mono text-xs uppercase tracking-wider text-muted">
+          Education
+        </h3>
+        <ul className="divide-y divide-line">
+          {education.map((e) => (
+            <li key={e.school} className="grid gap-1 py-5 sm:grid-cols-[180px_1fr] sm:gap-10">
+              <p className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1">{e.period}</p>
+              <div>
+                <p className="font-medium">
+                  {e.degree} <span className="text-muted">at</span> {e.school}
+                </p>
+                <p className="mt-0.5 text-sm text-muted">
+                  {[e.location, e.note].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Projects */}

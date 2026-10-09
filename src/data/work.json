@@ -2,42 +2,53 @@
   {
     "title": "Software Engineer 2",
     "company": "Asurion Insurance Services",
-    "location": "Milpitas, CA",
+    "location": "Remote",
     "period": "Sep 2024 - Present",
-    "description": "Built a SaaS-based knowledge base editor with versioning, checkpointing, and rollback for ML training documents, reducing update time to 10 minutes. Developed multi-cloud abstraction layer for AWS, GCP, and Azure, cutting deployment time to ~3 hours. Implemented real-time features using Kafka and WebSockets supporting ~2.5M daily requests.",
+    "highlights": [
+      "Built a deployment orchestration dashboard on a shared GitHub Actions framework, automating branch cuts, merges and one-click deploys with health checks from Grafana, Argo CD and Jenkins in one place. Releases went from 5–6 hours to under 2.",
+      "Replaced a GitHub-based document workflow, where every change needed a developer, with a SaaS knowledge-base editor with versioning, checkpoints and rollback. Updates now take about 10 minutes.",
+      "Migrated distributed services from ECS to EKS to address rising costs and scaling limits, with a zero-downtime cutover across environments and a clear path to multi-region, active-active disaster recovery.",
+      "Fixed Kafka consumers that weren't shutting down cleanly and kept triggering consumer-group rebalances, improving reliability for a system handling about 2.5M requests a day.",
+      "Replaced a fixed three-tier permission model with role-based access control across multi-tenant accounts, and built a pipeline that masks PII from partner webhook events and produces daily compliance reports.",
+      "Added Twilio and Shopify integrations, voice calling for customer chatbots with Amazon Connect, AI-driven observability with HUD.io, and a GitHub Action that uses Claude to fix Dependabot alerts automatically."
+    ],
     "tech": [
       "Kafka",
-      "WebSockets",
-      "AWS",
-      "GCP",
-      "Azure",
-      "HUD.io",
+      "AWS (ECS, EKS)",
+      "GitHub Actions",
+      "Argo CD",
+      "Grafana",
       "RBAC",
-      "Microservices"
+      "Twilio",
+      "Shopify",
+      "Amazon Connect",
+      "Claude"
     ]
   },
   {
-    "title": "Software Development Engineer",
+    "title": "Graduate Assistant (Software Development)",
     "company": "Binghamton University",
     "location": "Binghamton, NY",
     "period": "Jan 2023 - Sep 2024",
-    "description": "Built end-to-end analytics dashboard for graduate admissions, aggregating applicant and recruitment data. Integrated with SSO 2FA CAS 3.0 for role-based authorization. Reduced request time by 90% using Redis caching and improved search accuracy by 18% with geolocation API.",
-    "tech": ["Redis", "SSO", "CAS 3.0", "Geolocation API", "Analytics"]
+    "highlights": [
+      "Built an end-to-end analytics dashboard on the MEVN stack, processing 30,000+ applicant records each semester for the enrollment teams.",
+      "Integrated the university's single sign-on (SAML and CAS 3.0 with two-factor authentication) for secure, role-based access.",
+      "Traced slow page loads to repeated queries for filter data and cached it in Redis, cutting response times from seconds to milliseconds.",
+      "Standardized 60,000+ free-text addresses with a geolocation API, improving search and filter accuracy by 18%."
+    ],
+    "tech": ["Vue", "Express", "Node.js", "MongoDB", "Redis", "SAML", "CAS 3.0"]
   },
   {
-    "title": "Software Development Engineer",
+    "title": "Data Engineer",
     "company": "Tata Consultancy Services",
     "location": "Bengaluru, India",
     "period": "June 2019 - July 2022",
-    "description": "Developed and deployed ETL pipelines using Apache Spark, SparkSQL, and Scala. Exported 50+ million records daily for financial crime reporting. Reduced job runtime by 50% to achieve 60-minute SLA. Remodeled 60+ jobs with load assurance capabilities for data reliability.",
-    "tech": [
-      "Apache Spark",
-      "SparkSQL",
-      "Scala",
-      "Hive",
-      "Zeppelin",
-      "Autosys",
-      "ETL"
-    ]
+    "highlights": [
+      "Built distributed ETL pipelines with Apache Spark and SparkSQL for financial crime detection, processing 20–30M+ records per job into partitioned Parquet.",
+      "Orchestrated 50+ interdependent daily and hourly jobs as a DAG with Autosys and Scala, reliably exporting 50M+ records a day for financial crime alerts.",
+      "Fixed a bottleneck caused by data skew with repartitioning and caching, cutting job runtime by up to 50% to consistently meet a 60-minute SLA.",
+      "Added load-assurance checks to 60+ jobs, cross-validating record counts against ingestion metadata, which improved data reliability and cut debugging time."
+    ],
+    "tech": ["Apache Spark", "SparkSQL", "Scala", "Hive", "Parquet", "Zeppelin", "Autosys"]
   }
 ]
