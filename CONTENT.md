@@ -11,9 +11,15 @@ Run `npm run dev` to preview at http://localhost:3000 first.
    including GPS location. Camera details are saved to `src/data/photos.json` first.
 3. In `src/data/photos.json`, set each new photo's `title` and `location`
    (optionally a `caption`). Reorder entries to change the gallery order.
+   To show it on the globe, add approximate coordinates, e.g.
+   `"coords": [37.75, -119.6]` (latitude, longitude; park- or city-level is
+   plenty). Photos without `coords` simply stay off the globe.
 4. Commit `public/photos/` and `src/data/photos.json`.
 
 Originals are moved to `photos-inbox/added/`, which is never committed.
+
+The globe's continent dots come from `node scripts/build-globe.mjs`; it only
+needs re-running to change their density.
 
 ## Blog posts
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Minus, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Globe, LayoutGrid, Minus, Plus, X } from "lucide-react";
 import type { Photo } from "@/lib/photos";
 import { useViewerGestures } from "./useViewerGestures";
 import { usePinchToResize, useGridZoom, zoomBy, ZOOM_LEVELS } from "./useGridZoom";
@@ -14,25 +15,81 @@ const pad = (n: number) => String(n).padStart(2, "0");
 // Few photos read best as large captioned plates; many as a browsable grid.
 const PLATE_LIMIT = 3;
 
+// The globe (and its map data) only downloads when someone switches to it
+const PhotoGlobe = dynamic(() => import("./PhotoGlobe"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="mx-auto aspect-square w-full animate-pulse rounded-full bg-surface"
+      style={{ maxWidth: "min(100%, 78vh)" }}
+    />
+  ),
+});
+
 export default function PhotoGallery({ photos }: { photos: Photo[] }) {
-  const [open, setOpen] = useState<number | null>(null);
+  const [view, setView] = useState<"grid" | "globe">("grid");
+  // The viewer shows a list: every photo from the grid, or one place's photos from the globe
+  const [open, setOpen] = useState<{ list: Photo[]; index: number } | null>(null);
+  const openFromGrid = (index: number) => setOpen({ list: photos, index });
+  const isGrid = photos.length > PLATE_LIMIT;
 
   return (
     <>
-      {photos.length <= PLATE_LIMIT ? (
-        <Plates photos={photos} onOpen={setOpen} />
-      ) : (
-        <Masonry photos={photos} onOpen={setOpen} />
+      {photos.some((p) => p.coords) && (
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <ViewSwitch view={view} onChange={setView} />
+          {view === "grid" && isGrid && (
+            <div className="hidden lg:block">
+                  </div>
+          )}
+        </div>
       )}
-      {open !== null && (
+      {view === "globe" ? (
+        <PhotoGlobe photos={photos} onOpen={(list, index) => setOpen({ list, index })} />
+      ) : isGrid ? (
+        <Masonry photos={photos} onOpen={openFromGrid} />
+      ) : (
+        <Plates photos={photos} onOpen={openFromGrid} />
+      )}
+      {open && (
         <Lightbox
-          photos={photos}
-          index={open}
-          onChange={setOpen}
+          photos={open.list}
+          index={open.index}
+          onChange={(index) => setOpen({ ...open, index })}
           onClose={() => setOpen(null)}
         />
       )}
     </>
+  );
+}
+
+function ViewSwitch({
+  view,
+  onChange,
+}: {
+  view: "grid" | "globe";
+  onChange: (view: "grid" | "globe") => void;
+}) {
+  const options = [
+    { id: "grid", label: "Grid", icon: LayoutGrid },
+    { id: "globe", label: "Globe", icon: Globe },
+  ] as const;
+  return (
+    <div className="flex rounded-pill border border-line p-0.5" role="radiogroup" aria-label="Gallery view">
+      {options.map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          role="radio"
+          aria-checked={view === id}
+          onClick={() => onChange(id)}
+          className={`flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-xs transition-colors ${
+            view === id ? "bg-fg text-bg" : "text-muted hover:text-fg"
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" /> {label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -236,7 +293,7 @@ function ZoomControls() {
   const button =
     "grid h-8 w-9 place-items-center text-muted transition-colors hover:text-fg disabled:opacity-30 disabled:hover:text-muted";
   return (
-    <div className="mb-6 flex items-center justify-end gap-3">
+    <div className="flex items-center justify-end gap-3">
       <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
         Pinch to resize
       </span>

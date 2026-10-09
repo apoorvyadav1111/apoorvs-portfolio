@@ -12,6 +12,7 @@ interface PhotoEntry {
   camera?: string;
   settings?: string;
   taken?: string; // YYYY-MM-DD
+  coords?: [number, number]; // approximate [lat, lng] for the globe; omit to leave a photo off it
 }
 
 // Same shape as an entry, with `taken` formatted for display ("February 2026")

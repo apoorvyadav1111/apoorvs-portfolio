@@ -7,7 +7,11 @@
     "height": 2109,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/364s · ISO 64",
-    "taken": "2026-02-01"
+    "taken": "2026-02-01",
+    "coords": [
+      36.238,
+      -121.816
+    ]
   },
   {
     "src": "/photos/img-6806.jpg",
@@ -17,7 +21,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/1473s · ISO 80",
-    "taken": "2026-07-04"
+    "taken": "2026-07-04",
+    "coords": [
+      41.383,
+      -124.07
+    ]
   },
   {
     "src": "/photos/img-6872.jpg",
@@ -27,7 +35,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/533s · ISO 32",
-    "taken": "2026-07-04"
+    "taken": "2026-07-04",
+    "coords": [
+      41.37,
+      -124.02
+    ]
   },
   {
     "src": "/photos/img-6823.jpg",
@@ -37,7 +49,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/166s · ISO 80",
-    "taken": "2026-07-04"
+    "taken": "2026-07-04",
+    "coords": [
+      41.401,
+      -124.065
+    ]
   },
   {
     "src": "/photos/img-6719.jpg",
@@ -47,7 +63,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/797s · ISO 32",
-    "taken": "2026-06-28"
+    "taken": "2026-06-28",
+    "coords": [
+      37.726,
+      -119.574
+    ]
   },
   {
     "src": "/photos/img-6709.jpg",
@@ -57,7 +77,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "38mm · ƒ/1.8 · 1/3717s · ISO 80",
-    "taken": "2026-06-28"
+    "taken": "2026-06-28",
+    "coords": [
+      37.716,
+      -119.677
+    ]
   },
   {
     "src": "/photos/img-6643.jpg",
@@ -67,7 +91,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/13699s · ISO 80",
-    "taken": "2026-06-27"
+    "taken": "2026-06-27",
+    "coords": [
+      37.727,
+      -119.544
+    ]
   },
   {
     "src": "/photos/img-6469.jpg",
@@ -77,7 +105,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/952s · ISO 80",
-    "taken": "2026-05-23"
+    "taken": "2026-05-23",
+    "coords": [
+      36.565,
+      -118.775
+    ]
   },
   {
     "src": "/photos/img-6459-snapseedcopy.jpg",
@@ -87,7 +119,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 10s · ISO 12500",
-    "taken": "2026-05-23"
+    "taken": "2026-05-23",
+    "coords": [
+      36.58,
+      -118.76
+    ]
   },
   {
     "src": "/photos/img-6394.jpg",
@@ -97,7 +133,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/724s · ISO 80",
-    "taken": "2026-05-22"
+    "taken": "2026-05-22",
+    "coords": [
+      36.582,
+      -118.751
+    ]
   },
   {
     "src": "/photos/img-6213.jpg",
@@ -107,7 +147,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/2809s · ISO 64",
-    "taken": "2026-05-16"
+    "taken": "2026-05-16",
+    "coords": [
+      37.756,
+      -119.597
+    ]
   },
   {
     "src": "/photos/img-6363.jpg",
@@ -117,7 +161,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/402s · ISO 32",
-    "taken": "2026-05-16"
+    "taken": "2026-05-16",
+    "coords": [
+      37.717,
+      -119.646
+    ]
   },
   {
     "src": "/photos/img-6187.jpg",
@@ -127,7 +175,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "91mm · ƒ/2.8 · 1/570s · ISO 32",
-    "taken": "2026-05-09"
+    "taken": "2026-05-09",
+    "coords": [
+      36.371,
+      -121.902
+    ]
   },
   {
     "src": "/photos/img-6105.jpg",
@@ -137,7 +189,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/312s · ISO 32",
-    "taken": "2026-03-28"
+    "taken": "2026-03-28",
+    "coords": [
+      36.158,
+      -121.672
+    ]
   },
   {
     "src": "/photos/img-6031.jpg",
@@ -147,7 +203,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "154mm · ƒ/2.8 · 1/12658s · ISO 20",
-    "taken": "2026-03-15"
+    "taken": "2026-03-15",
+    "coords": [
+      37.55,
+      -122.05
+    ]
   },
   {
     "src": "/photos/img-5903.jpg",
@@ -157,7 +217,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/99s · ISO 32",
-    "taken": "2026-02-14"
+    "taken": "2026-02-14",
+    "coords": [
+      37.73,
+      -121.65
+    ]
   },
   {
     "src": "/photos/img-5813.jpg",
@@ -167,7 +231,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/634s · ISO 80",
-    "taken": "2026-02-01"
+    "taken": "2026-02-01",
+    "coords": [
+      36.238,
+      -121.816
+    ]
   },
   {
     "src": "/photos/img-5548.jpg",
@@ -177,7 +245,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/3257s · ISO 64",
-    "taken": "2025-12-06"
+    "taken": "2025-12-06",
+    "coords": [
+      37.806,
+      -122.466
+    ]
   },
   {
     "src": "/photos/img-5508.jpg",
@@ -187,7 +259,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/95s · ISO 250",
-    "taken": "2025-11-30"
+    "taken": "2025-11-30",
+    "coords": [
+      36.569,
+      -121.965
+    ]
   },
   {
     "src": "/photos/img-5288.jpg",
@@ -197,7 +273,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/12048s · ISO 80",
-    "taken": "2025-10-12"
+    "taken": "2025-10-12",
+    "coords": [
+      40.457,
+      -121.506
+    ]
   },
   {
     "src": "/photos/img-5309.jpg",
@@ -207,7 +287,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "39mm · ƒ/1.8 · 1/4184s · ISO 80",
-    "taken": "2025-10-12"
+    "taken": "2025-10-12",
+    "coords": [
+      40.468,
+      -121.511
+    ]
   },
   {
     "src": "/photos/img-5350.jpg",
@@ -217,7 +301,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/1340s · ISO 32",
-    "taken": "2025-10-12"
+    "taken": "2025-10-12",
+    "coords": [
+      40.488,
+      -121.505
+    ]
   },
   {
     "src": "/photos/img-5069.jpg",
@@ -227,7 +315,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/444s · ISO 80",
-    "taken": "2025-10-11"
+    "taken": "2025-10-11",
+    "coords": [
+      41.012,
+      -121.651
+    ]
   },
   {
     "src": "/photos/img-4960.jpg",
@@ -237,7 +329,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/186s · ISO 80",
-    "taken": "2025-09-27"
+    "taken": "2025-09-27",
+    "coords": [
+      36.57,
+      -118.77
+    ]
   },
   {
     "src": "/photos/img-4729.jpg",
@@ -247,7 +343,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "78mm · ƒ/2.8 · 1/99s · ISO 80",
-    "taken": "2025-09-20"
+    "taken": "2025-09-20",
+    "coords": [
+      37.628,
+      -112.163
+    ]
   },
   {
     "src": "/photos/img-4874.jpg",
@@ -257,7 +357,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "14mm · ƒ/2.2 · 1/1770s · ISO 50",
-    "taken": "2025-09-20"
+    "taken": "2025-09-20",
+    "coords": [
+      37.622,
+      -112.166
+    ]
   },
   {
     "src": "/photos/img-4877.jpg",
@@ -267,7 +371,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "77mm · ƒ/2.8 · 1/1908s · ISO 32",
-    "taken": "2025-09-20"
+    "taken": "2025-09-20",
+    "coords": [
+      37.627,
+      -112.164
+    ]
   },
   {
     "src": "/photos/img-4705.jpg",
@@ -277,7 +385,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/2809s · ISO 64",
-    "taken": "2025-09-19"
+    "taken": "2025-09-19",
+    "coords": [
+      37.2,
+      -112.985
+    ]
   },
   {
     "src": "/photos/img-4422.jpg",
@@ -287,7 +399,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/91s · ISO 80",
-    "taken": "2025-09-18"
+    "taken": "2025-09-18",
+    "coords": [
+      37.215,
+      -112.95
+    ]
   },
   {
     "src": "/photos/img-4461.jpg",
@@ -297,7 +413,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "14mm · ƒ/2.2 · 1/716s · ISO 40",
-    "taken": "2025-09-18"
+    "taken": "2025-09-18",
+    "coords": [
+      37.269,
+      -112.948
+    ]
   },
   {
     "src": "/photos/angels-landing.jpg",
@@ -307,7 +427,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/5556s · ISO 64",
-    "taken": "2025-09-18"
+    "taken": "2025-09-18",
+    "coords": [
+      37.269,
+      -112.948
+    ]
   },
   {
     "src": "/photos/img-4131.jpg",
@@ -317,7 +441,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "92mm · ƒ/2.8 · 1/99s · ISO 50",
-    "taken": "2025-05-25"
+    "taken": "2025-05-25",
+    "coords": [
+      37.77,
+      -122.47
+    ]
   },
   {
     "src": "/photos/img-3936.jpg",
@@ -327,7 +455,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "114mm · ƒ/2.8 · 1/405s · ISO 32",
-    "taken": "2025-05-10"
+    "taken": "2025-05-10",
+    "coords": [
+      37.55,
+      -122.05
+    ]
   },
   {
     "src": "/photos/img-3485.jpg",
@@ -337,7 +469,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "48mm · ƒ/1.8 · 1/431s · ISO 64",
-    "taken": "2024-12-30"
+    "taken": "2024-12-30",
+    "coords": [
+      39.198,
+      -119.93
+    ]
   },
   {
     "src": "/photos/img-1993.jpg",
@@ -347,7 +483,11 @@
     "height": 2560,
     "camera": "iPhone 14 Pro",
     "settings": "146mm · ƒ/2.8 · 1/60s · ISO 400",
-    "taken": "2024-05-06"
+    "taken": "2024-05-06",
+    "coords": [
+      42.089,
+      -75.97
+    ]
   },
   {
     "src": "/photos/img-1410.jpg",
@@ -357,7 +497,11 @@
     "height": 1920,
     "camera": "iPhone 14 Pro",
     "settings": "24mm · ƒ/1.8 · 1/3597s · ISO 80",
-    "taken": "2023-10-20"
+    "taken": "2023-10-20",
+    "coords": [
+      42.089,
+      -75.969
+    ]
   },
   {
     "src": "/photos/img-0590.jpg",
