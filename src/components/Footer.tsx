@@ -4,6 +4,14 @@ interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
 }
 
+// Pages are pre-rendered at deploy time, so this is the date of the last deploy
+const lastUpdated = new Date().toLocaleDateString("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "America/Los_Angeles",
+});
+
 export default function Footer({ personal }: FooterProps) {
   const links = [
     { href: personal.github, label: "GitHub", icon: Github },
@@ -13,9 +21,7 @@ export default function Footer({ personal }: FooterProps) {
   return (
     <footer className="border-t border-line">
       <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-10 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p>
-          © {new Date().getFullYear()} {personal.name}
-        </p>
+        <p>Last updated {lastUpdated}</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           {links.map(({ href, label, icon: Icon }) => (
             <a
