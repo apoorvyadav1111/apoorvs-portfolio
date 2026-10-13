@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
-import { Monitor, Moon, RotateCcw, Shuffle, Sun } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { DEFAULT_MODE, DEFAULT_THEME, FONT_CHOICES, THEMES } from "@/themes";
 
 // Visitor-facing appearance controls: theme, font and light/dark mode.
@@ -98,6 +98,9 @@ function setMode(mode: Mode) {
 const pointFrom = (e: React.MouseEvent) =>
   e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : undefined;
 
+const DICE = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
+const ROLL_MS = 650;
+
 const MODES: { id: Mode; label: string; icon: typeof Sun }[] = [
   { id: "light", label: "Light", icon: Sun },
   { id: "system", label: "System", icon: Monitor },
@@ -110,6 +113,8 @@ export default function AppearanceMenu() {
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  const [face, setFace] = useState(4);
+  const [rolling, setRolling] = useState(false);
 
   // Follow the device's light/dark setting live while on "System"
   useEffect(() => {
@@ -140,16 +145,35 @@ export default function AppearanceMenu() {
     };
   }, [open]);
 
+  // Rolls the die (its faces flicker while it tumbles), then applies a random
+  // theme and font from where it landed
   const shuffle = (e: React.MouseEvent) => {
+    if (rolling) return;
     const others = (list: string[], current: string) => list.filter((id) => id !== current);
     const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
     const palette = pick(others(THEMES.map((t) => t.id), appearance.palette));
     const font = pick(others(FONT_CHOICES.map((f) => f.id), appearance.font));
-    transition(() => {
-      setPalette(palette);
-      setFont(font);
-    }, pointFrom(e));
+    const origin = pointFrom(e);
+    const apply = () =>
+      transition(() => {
+        setPalette(palette);
+        setFont(font);
+      }, origin);
+
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      apply();
+      return;
+    }
+    setRolling(true);
+    const flicker = setInterval(() => setFace((f) => (f + 1 + Math.floor(Math.random() * 5)) % 6), 80);
+    setTimeout(() => {
+      clearInterval(flicker);
+      setFace(Math.floor(Math.random() * 6));
+      setRolling(false);
+      apply();
+    }, ROLL_MS);
   };
+  const Die = DICE[face];
 
   const reset = (e: React.MouseEvent) =>
     transition(() => {
@@ -192,9 +216,15 @@ export default function AppearanceMenu() {
             <p className="display text-xl">Appearance</p>
             <button
               onClick={shuffle}
-              className="flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface hover:text-fg"
+              className="group/dice flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs text-muted transition-colors hover:bg-surface hover:text-fg"
             >
-              <Shuffle className="h-3.5 w-3.5" /> Shuffle
+              {/* The wrapper tumbles; the face inside changes as it goes */}
+              <span
+                className={`inline-flex transition-transform group-hover/dice:-rotate-12 ${rolling ? "dice-rolling text-accent" : ""}`}
+              >
+                <Die className="h-4 w-4" aria-hidden />
+              </span>
+              Shuffle
             </button>
           </div>
 

@@ -173,6 +173,31 @@ body::before {
   animation-delay: calc(var(--d, 0) * var(--stagger));
 }
 
+/* The Shuffle die tumbles before it lands */
+@keyframes dice-roll {
+  0% {
+    transform: translateY(0) rotate(0);
+  }
+  25% {
+    transform: translateY(-7px) rotate(-160deg) scale(1.15);
+  }
+  50% {
+    transform: translateY(0) rotate(-320deg);
+  }
+  70% {
+    transform: translateY(-3px) rotate(-390deg);
+  }
+  85% {
+    transform: translateY(0) rotate(-350deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-360deg);
+  }
+}
+.dice-rolling {
+  animation: dice-roll 650ms cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
 /* Mouse: cards lean toward the cursor, lit by a spotlight that follows it */
 @media (hover: hover) and (pointer: fine) {
   [data-motion] [data-tilt] {
