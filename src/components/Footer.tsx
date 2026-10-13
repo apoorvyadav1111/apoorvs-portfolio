@@ -46,7 +46,8 @@ export default function Footer({ personal }: FooterProps) {
             <CreditsDialog name={personal.name} />
           </div>
           <div>
-            <MakeYourOwnDialog prompt={makeYourOwnPrompt} /> · <TimelapseLink />
+            <MakeYourOwnDialog prompt={makeYourOwnPrompt} />
+            <TimelapseLink />
           </div>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>

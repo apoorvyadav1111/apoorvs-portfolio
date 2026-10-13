@@ -1,10 +1,12 @@
-import { SEASONS, THEMES, currentSeason } from "@/themes";
+import { SEASONS, THEMES } from "@/themes";
 import type { Palette, Season } from "@/themes";
 
 // A year going by: the site moves through each season's theme, blending the
 // colours over the last few seconds of each one (the particles mix too; see
-// SeasonSky.tsx). Started from the footer or the "seasons" easter egg it goes
-// once round and ends where it began; root's `timelapse` in the shell loops.
+// SeasonSky.tsx). It only runs from a seasonal theme, starting at that theme's
+// season. Started from the footer or the "seasons" easter egg it goes once
+// round (at least a minute) and ends on the season it began; root's
+// `timelapse` in the shell loops.
 //
 // Nothing is saved: the theme is set on <html> only, and the visitor's own
 // comes back when it ends or is stopped. Picking a theme meanwhile stops it.
@@ -19,7 +21,11 @@ export interface TimelapseStatus {
   progress: () => number; // 0–1 through the current season
 }
 
-const SPEED = { slow: 0.5, normal: 1, fast: 2, off: 1 } as const; // follows the particle speed
+// Seasons take longer with slow particles, but never get shorter than
+// MIN_SEASON, so each one has time to look its best
+const SPEED = { slow: 0.5, normal: 1, fast: 1, off: 1 } as const;
+export const MIN_SEASON = 15; // seconds, so a year is at least a minute
+const BLEND = 4; // seconds of each season spent blending into the next
 const VARS: [keyof Palette, string][] = [
   ["bg", "--bg"],
   ["surface", "--surface"],
@@ -98,7 +104,7 @@ function tick(now: number) {
 
   const to = next();
   if (!to) return stopTimelapse(false);
-  const fade = Math.min(3, run.every * 0.4);
+  const fade = BLEND;
   const into = run.elapsed - (run.every - fade);
   if (into > 0) {
     // The last few seconds: blend every colour toward the next theme
@@ -121,41 +127,41 @@ function tick(now: number) {
   run.frame = requestAnimationFrame(tick);
 }
 
-export function startTimelapse({ every = 8, loop = false }: { every?: number; loop?: boolean } = {}) {
-  stopTimelapse();
+// Whether a timelapse can start: only from a seasonal theme
+export const canTimelapse = () => Boolean(THEMES.find((t) => t.id === root().dataset.palette)?.season);
+
+export function startTimelapse({ every = MIN_SEASON, loop = false }: { every?: number; loop?: boolean } = {}) {
   const r = root();
-  const start = r.dataset.palette ?? THEMES[0].id;
-  const first = currentSeason();
+  const first = THEMES.find((t) => t.id === r.dataset.palette)?.season;
+  if (!first) return false;
+  stopTimelapse();
+  const start = themeFor(first);
   const i = SEASONS.indexOf(first);
-  // Once round: into this season's theme (if it isn't on), round the year back
-  // to it, then back to whatever theme was on before
-  const year = [1, 2, 3, 4].map((k) => themeFor(SEASONS[(i + k) % 4]));
-  const queue = [...(start === themeFor(first) ? [] : [themeFor(first)]), ...year, ...(start === themeFor(first) ? [] : [start])];
+  // Once round: the next three seasons, then back to this one
+  const queue = [1, 2, 3, 4].map((k) => themeFor(SEASONS[(i + k) % 4]));
 
   const watcher = new MutationObserver(() => {
     // Someone else changed the theme (the Appearance menu, the shell): stop here
     if (run && r.dataset.palette !== run.showing) stopTimelapse(false);
   });
   run = {
-    every,
+    every: Math.max(MIN_SEASON, every),
     loop,
     start,
     queue: loop ? [] : queue,
     showing: start,
-    season: THEMES.find((t) => t.id === start)?.season ?? null,
-    step: 0,
-    // Not on this season's theme yet: start blending into it straight away
-    elapsed: start === themeFor(first) ? 0 : every - Math.min(3, every * 0.4),
+    season: first,
+    step: 1,
+    elapsed: 0,
     last: performance.now(),
     frame: 0,
     watcher,
   };
-  if (loop && start !== themeFor(first)) run.season = SEASONS[(i + 3) % 4]; // so the first step lands on `first`
-  if (run.season === first) run.step = 1;
   r.dataset.timelapse = loop ? "loop" : "once";
   watcher.observe(r, { attributes: true, attributeFilter: ["data-palette"] });
   run.frame = requestAnimationFrame(tick);
   emit();
+  return true;
 }
 
 // Stops the year. `restore` (stopping partway) puts the visitor's theme back;

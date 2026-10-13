@@ -13,7 +13,7 @@ import {
 } from "../AppearanceMenu";
 import type { Mode, Weather } from "../AppearanceMenu";
 import { celebrate } from "../celebrate";
-import { startTimelapse, stopTimelapse, timelapseStatus } from "@/lib/timelapse";
+import { MIN_SEASON, startTimelapse, stopTimelapse, timelapseStatus } from "@/lib/timelapse";
 import { FEATURES, featureOn, setFeature } from "@/lib/features";
 import type { Feature } from "@/lib/features";
 import { loadData, dataNow } from "./data";
@@ -478,7 +478,7 @@ export const COMMANDS: Record<string, Command> = {
   timelapse: {
     group: "Root",
     usage: "timelapse [on [seconds]|off]",
-    about: "turn the seasons over and over, console open or closed (root; the footer has a once-round version)",
+    about: "turn the seasons over and over from a seasonal theme, 15–120s each (root; the footer has a once-round version)",
     complete: () => ["on", "off"],
     run: (sh) => {
       const [arg, secs] = sh.args;
@@ -491,8 +491,9 @@ export const COMMANDS: Record<string, Command> = {
         return sh.print("timelapse: off, back to your own theme.", "accent");
       }
       if (arg !== "on") return sh.print("usage: timelapse [on [seconds]|off]", "err");
-      const every = Math.min(60, Math.max(4, Number(secs) || 8));
-      startTimelapse({ every, loop: true });
+      const every = Math.min(120, Math.max(MIN_SEASON, Number(secs) || MIN_SEASON));
+      if (!startTimelapse({ every, loop: true }))
+        return sh.print("timelapse: needs a seasonal theme to start from (sudo theme harvest, frost, bloom or solstice)", "err");
       sh.print(`timelapse: on. A new season every ${every}s, looping; \`timelapse off\` to stop. Close the console to watch.`, "accent");
     },
   },
