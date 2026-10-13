@@ -332,6 +332,23 @@ body::before {
   }
 }
 
+/* Five clicks on the name in the header: the letters tumble */
+.logo-scramble {
+  display: inline-block;
+  animation: logo-tumble 0.9s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+@keyframes logo-tumble {
+  0% {
+    transform: perspective(400px) rotateX(0);
+  }
+  60% {
+    transform: perspective(400px) rotateX(380deg);
+  }
+  100% {
+    transform: perspective(400px) rotateX(360deg);
+  }
+}
+
 /* Dozing: after a minute idle the page dims and a few z's float up */
 .doze {
   position: fixed;

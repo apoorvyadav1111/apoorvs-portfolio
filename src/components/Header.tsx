@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AppearanceMenu from "./AppearanceMenu";
@@ -17,6 +17,32 @@ const NAV = [
 export default function Header({ name }: { name: string }) {
   const pathname = usePathname();
   const header = useRef<HTMLElement>(null);
+  const [scramble, setScramble] = useState<string | null>(null);
+  const clicks = useRef<number[]>([]);
+
+  // Easter egg: five quick clicks on the name scramble its letters, which
+  // tumble and resolve left to right
+  const onLogoClick = (e: React.MouseEvent) => {
+    clicks.current = [...clicks.current.filter((t) => e.timeStamp - t < 2000), e.timeStamp];
+    if (clicks.current.length < 5 || scramble !== null) return;
+    clicks.current = [];
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&*+=?@";
+    const steps = 18;
+    let step = 0;
+    const tick = setInterval(() => {
+      step++;
+      const done = Math.floor((step / steps) * name.length);
+      setScramble(
+        [...name].map((c, i) => (c === " " || i < done ? c : glyphs[Math.floor(Math.random() * glyphs.length)])).join(""),
+      );
+      if (step >= steps) {
+        clearInterval(tick);
+        setScramble(null);
+      }
+    }, 50);
+  };
+  const shown = scramble ?? name;
 
   // Phones: slide the bar away while scrolling down, bring it back on the way
   // up (the CSS only applies it on small screens with motion on)
@@ -44,10 +70,18 @@ export default function Header({ name }: { name: string }) {
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="display text-xl leading-none hover:text-accent transition-colors"
+          onClick={onLogoClick}
+          className={`display text-xl leading-none hover:text-accent transition-colors ${scramble !== null ? "logo-scramble text-accent" : ""}`}
         >
-          <span className="hidden sm:inline">{name}</span>
-          <span className="sm:hidden">{initials}</span>
+          <span className="hidden sm:inline">{shown}</span>
+          <span className="sm:hidden">
+            {scramble !== null
+              ? shown
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+              : initials}
+          </span>
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-2">
