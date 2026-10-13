@@ -7,6 +7,7 @@ import education from "@/data/education.json";
 import projects from "@/data/projects.json";
 import { getAllPosts, formatDate } from "@/lib/posts";
 import { getPhotos } from "@/lib/photos";
+import HeroStatus from "@/components/HeroStatus";
 
 function SectionHeading({
   index,
@@ -63,13 +64,10 @@ export default function Home() {
     <main className="mx-auto max-w-5xl px-4 sm:px-6">
       {/* Hero */}
       <section className="pt-20 pb-24 sm:pt-28 sm:pb-32">
-        <p className="enter mb-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-          </span>
-          {personal.currently} · {personal.location}
-        </p>
+        <HeroStatus
+          text={`${personal.currently} · ${personal.location}`}
+          className="enter mb-8 font-mono text-xs uppercase tracking-widest text-muted"
+        />
         <h1 className="max-w-4xl display text-5xl leading-[var(--display-leading)] sm:text-7xl">
           <Words text={lead} from={1} />{" "}
           {rest && (

@@ -272,6 +272,116 @@ body::before {
   }
 }
 
+/* ---- Easter eggs (see src/components/EasterEggs.tsx and celebrate.ts) ---- */
+@keyframes egg-rule-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes egg-rule-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes egg-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes egg-shutter {
+  0% {
+    transform: scaleY(0);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0);
+  }
+}
+@keyframes egg-flash {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes egg-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.6) rotate(-14deg);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(0.96) rotate(-8deg);
+  }
+  20% {
+    transform: scale(1) rotate(-8deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1) rotate(-8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.03) rotate(-8deg);
+  }
+}
+
+/* Dozing: after a minute idle the page dims and a few z's float up */
+.doze {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color 0.4s;
+}
+.doze span {
+  position: absolute;
+  right: 1.75rem;
+  bottom: 1.5rem;
+  font-family: var(--theme-display), sans-serif;
+  font-weight: var(--display-weight);
+  color: var(--accent);
+  opacity: 0;
+}
+[data-dozing] .doze {
+  background: color-mix(in oklab, var(--bg) 45%, transparent);
+  transition: background-color 3s 0.5s;
+}
+[data-dozing] .doze span {
+  animation: doze-z 3s ease-in infinite;
+}
+[data-dozing] .doze span:nth-child(1) {
+  font-size: 1rem;
+}
+[data-dozing] .doze span:nth-child(2) {
+  font-size: 1.4rem;
+  animation-delay: 1s;
+}
+[data-dozing] .doze span:nth-child(3) {
+  font-size: 1.9rem;
+  animation-delay: 2s;
+}
+@keyframes doze-z {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-10deg);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-1.5rem, -4.5rem) rotate(10deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;

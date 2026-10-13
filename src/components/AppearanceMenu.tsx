@@ -96,6 +96,20 @@ function setMode(mode: Mode) {
   document.documentElement.setAttribute("data-theme", resolved);
 }
 
+// A random theme (from this season's) and font, both different from now.
+// Also used by the shake-to-shuffle easter egg.
+export function shuffleLook(origin?: { x: number; y: number }) {
+  const d = document.documentElement;
+  const others = (list: string[], current: string) => list.filter((id) => id !== current);
+  const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
+  const palette = pick(others(availableThemes(currentSeason()).map((t) => t.id), d.dataset.palette ?? DEFAULT_THEME));
+  const font = pick(others(FONT_CHOICES.map((f) => f.id), d.dataset.font ?? "theme"));
+  transition(() => {
+    setPalette(palette);
+    setFont(font);
+  }, origin);
+}
+
 const pointFrom = (e: React.MouseEvent) =>
   e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : undefined;
 
@@ -146,20 +160,12 @@ export default function AppearanceMenu() {
     };
   }, [open]);
 
-  // Rolls the die (its faces flicker while it tumbles), then applies a random
-  // theme and font from where it landed
+  // Rolls the die (its faces flicker while it tumbles), then shuffles from
+  // where it landed
   const shuffle = (e: React.MouseEvent) => {
     if (rolling) return;
-    const others = (list: string[], current: string) => list.filter((id) => id !== current);
-    const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
-    const palette = pick(others(availableThemes(currentSeason()).map((t) => t.id), appearance.palette));
-    const font = pick(others(FONT_CHOICES.map((f) => f.id), appearance.font));
     const origin = pointFrom(e);
-    const apply = () =>
-      transition(() => {
-        setPalette(palette);
-        setFont(font);
-      }, origin);
+    const apply = () => shuffleLook(origin);
 
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       apply();
