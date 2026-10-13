@@ -332,6 +332,16 @@ body::before {
   }
 }
 
+/* Hovering "slow down" in the headline: the letters ease apart, slowly,
+   and take their time coming back */
+[data-motion] .slowdown .enter-word {
+  transition: letter-spacing 2.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+[data-motion] .slowdown:hover .enter-word {
+  letter-spacing: 0.14em;
+  transition-duration: 1.6s;
+}
+
 /* Five clicks on the name in the header: the letters tumble */
 .logo-scramble {
   display: inline-block;

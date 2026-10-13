@@ -57,6 +57,7 @@ export default function Home() {
   const [lead, ...after] = personal.headline.split("—");
   const rest = after.join("—");
   const leadCount = lead.trim().split(/\s+/).length;
+  const slow = `—${rest}`.match(/^(.*)\s(slow down\.?)$/i);
   const restCount = rest ? `—${rest}`.trim().split(/\s+/).length : 0;
   const afterHeadline = 1 + (leadCount + restCount) * WORD_STEP;
 
@@ -72,7 +73,17 @@ export default function Home() {
           <Words text={lead} from={1} />{" "}
           {rest && (
             <span className="em">
-              <Words text={`—${rest}`} from={1 + leadCount * WORD_STEP} />
+              {slow ? (
+                <>
+                  <Words text={slow[1]} from={1 + leadCount * WORD_STEP} />{" "}
+                  {/* Easter egg: hovering "slow down" slows it down */}
+                  <span className="slowdown">
+                    <Words text={slow[2]} from={1 + (leadCount + slow[1].trim().split(/\s+/).length) * WORD_STEP} />
+                  </span>
+                </>
+              ) : (
+                <Words text={`—${rest}`} from={1 + leadCount * WORD_STEP} />
+              )}
             </span>
           )}
         </h1>
