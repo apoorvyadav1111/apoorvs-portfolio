@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import { drawBlossom, drawPetal } from "./blossom";
+import { featureOn } from "@/lib/features";
 
 // A few particles drifting across the page while a theme with `particles` is
 // on (the seasonal themes): leaves, snow, petals or fireflies. Kept sparse and
@@ -12,6 +13,10 @@ import { drawBlossom, drawPetal } from "./blossom";
 // Whatever falls onto the footer's top edge settles there in a small pile
 // (fireflies land and keep glowing). Moving the mouse or a finger through the
 // pile kicks it back into the air.
+//
+// Once a pile builds up, a tool appears at the end of the footer's edge: a rake
+// for leaves, a shovel for snow, a broom for petals, a jar for fireflies. Pick
+// it up and sweep to clear the pile for good (Esc or the button puts it down).
 
 type Kind = NonNullable<(typeof THEMES)[number]["particles"]>;
 
@@ -41,6 +46,8 @@ interface Piece {
   phase: number;
   thick: number; // how much it adds to the pile's height
   flying: boolean;
+  gone?: boolean; // swept away by the tool: never settles again
+  life?: number; // swept pieces fade out over a second
 }
 
 // Particles per 1440×900 of screen
@@ -50,6 +57,15 @@ const MAX_PIECES = 110;
 const MAX_HEIGHT = 22; // px; deeper than this and things fall behind the footer
 const MAX_FIREFLIES = 6;
 const KICK_REACH = 38; // px around the pointer
+const TOOL_FROM = 12; // pieces in the pile before the tool turns up (fireflies: 4)
+const TOOL_REACH = 30; // px around the tool's head
+
+const TOOLS: Record<Kind, { name: string; icon: string }> = {
+  leaves: { name: "rake", icon: '<path d="M18 2 6 17"/><path d="M2 15l8 6"/><path d="M3 16l-1.5 2.5M5.5 17.8 4 20.3M8 19.7l-1.5 2.5"/>' },
+  snow: { name: "shovel", icon: '<path d="M20 2 11 11"/><path d="M17 1l5 5"/><path d="m11 11-2-2-6 6c-1.5 1.5 0 4.5 3 6l6-6z"/>' },
+  petals: { name: "broom", icon: '<path d="M20 2 12 10"/><path d="m9 9 6 6"/><path d="M9 9c-3 1-6 5-7 12 7-1 11-4 12-7z"/><path d="M5 15l-2 4M8 17l-3 4"/>' },
+  fireflies: { name: "jar", icon: '<rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-2 1-3 2.5-3 5v7a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-7c0-2.5-1-4-3-5V5"/><circle cx="10" cy="14" r="1"/><circle cx="14" cy="12" r="1"/><circle cx="13" cy="17" r="1"/>' },
+};
 
 // The visitor's speed setting from the Appearance menu (`data-weather` on <html>):
 // how fast things fall, and how many there are
@@ -62,6 +78,8 @@ type Weather = keyof typeof WEATHER | "off";
 
 export default function SeasonSky() {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const toolButton = useRef<HTMLButtonElement>(null);
+  const toolNote = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -116,20 +134,20 @@ export default function SeasonSky() {
     };
 
     // One leaf, flake, petal or firefly at (x, y). Resting ones lie still.
-    const shape = (x: number, y: number, p: Particle | Piece, t: number, resting: boolean) => {
+    const shape = (x: number, y: number, p: Particle | Piece, t: number, resting: boolean, fade = 1) => {
       ctx.fillStyle = p.color;
       const spin = "rot" in p ? p.rot : t * p.spin * 0.3 + p.phase;
       if (kind === "snow") {
         if (resting) {
           // Settled snow: low, wide mounds that merge into a layer
-          ctx.globalAlpha = 0.8;
+          ctx.globalAlpha = (0.8) * fade;
           ctx.beginPath();
           ctx.ellipse(x, y, p.size * 1.1, p.size * 0.55, 0, 0, Math.PI * 2);
           ctx.fill();
           return;
         }
         // A six-armed flake, slowly turning; bigger ones get little branches
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = (0.6) * fade;
         ctx.strokeStyle = p.color;
         ctx.lineWidth = 1;
         ctx.lineCap = "round";
@@ -154,7 +172,7 @@ export default function SeasonSky() {
         ctx.restore();
       } else if (kind === "fireflies") {
         const pulse = 0.5 + 0.5 * Math.sin(t * 1.6 + p.phase * 3);
-        ctx.globalAlpha = 0.15 + 0.6 * pulse;
+        ctx.globalAlpha = (0.15 + 0.6 * pulse) * fade;
         ctx.shadowColor = p.color;
         ctx.shadowBlur = 10;
         ctx.beginPath();
@@ -164,7 +182,7 @@ export default function SeasonSky() {
       } else {
         // Leaves and petals tumble, narrowing as they turn edge-on. Whole
         // blossoms mostly float flat; resting ones lie seen at an angle.
-        ctx.globalAlpha = kind === "leaves" ? (resting ? 0.75 : 0.55) : resting ? 0.85 : 0.7;
+        ctx.globalAlpha = (kind === "leaves" ? (resting ? 0.75 : 0.55) : resting ? 0.85 : 0.7) * fade;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate("rot" in p ? p.rot : t * p.spin * (p.whole ? 0.4 : 1) + p.phase);
@@ -220,6 +238,7 @@ export default function SeasonSky() {
 
     // Has a falling particle reached the pile's surface (or a firefly the edge)?
     const landed = (p: Particle) => {
+      if (tool) return false; // cleaning up: nothing new settles meanwhile
       const surface = edge - heights[column(p.x)];
       if (kind === "fireflies") return Math.abs(p.y - (edge - 3)) < 2 && settle(p.x, p);
       return p.y >= surface && p.y < edge + 30 && settle(p.x, p);
@@ -229,6 +248,19 @@ export default function SeasonSky() {
     const updatePile = (dt: number) => {
       pile = pile.filter((piece) => {
         if (!piece.flying) return true;
+        if (piece.gone) {
+          piece.vy += 300 * dt;
+          piece.x += piece.vx * dt;
+          piece.y += piece.vy * dt;
+          piece.rot += piece.spin * dt;
+          piece.life = (piece.life ?? 1) - dt * 1.2;
+          // Caught fireflies drift into the jar
+          if (kind === "fireflies" && pointer) {
+            piece.x += (pointer.x - piece.x) * Math.min(1, dt * 6);
+            piece.y += (pointer.y - 10 - piece.y) * Math.min(1, dt * 6);
+          }
+          return piece.life > 0;
+        }
         piece.vy += 900 * dt;
         piece.vx *= Math.pow(0.4, dt);
         piece.x += piece.vx * dt;
@@ -251,7 +283,9 @@ export default function SeasonSky() {
       const dx = pointer ? x - pointer.x : 0;
       const dy = pointer ? y - pointer.y : 0;
       pointer = { x, y };
-      if (!frame || edge > h || Math.hypot(dx, dy) < 2) return;
+      if (!frame || edge > h) return;
+      if (tool) return sweep(x, y, dx);
+      if (Math.hypot(dx, dy) < 2) return;
       for (const piece of pile) {
         if (piece.flying) continue;
         const py = edge - piece.y;
@@ -267,8 +301,151 @@ export default function SeasonSky() {
         piece.spin = (Math.random() - 0.5) * 12;
       }
     };
-    const onPointer = (e: PointerEvent) => kick(e.clientX, e.clientY);
-    const onTouch = (e: TouchEvent) => kick(e.touches[0].clientX, e.touches[0].clientY);
+    const onPointer = (e: PointerEvent) => {
+      kick(e.clientX, e.clientY);
+      // Holding a tool over the pile: the tool is the cursor
+      if (tool && e.pointerType === "mouse") root.style.cursor = nearPile(e.clientY) ? "none" : "";
+    };
+    const onTouch = (e: TouchEvent) => {
+      const t = e.touches[0];
+      // Sweeping with a finger shouldn't scroll the page
+      if (tool && nearPile(t.clientY) && e.cancelable) e.preventDefault();
+      kick(t.clientX, t.clientY);
+    };
+
+    // ---- The tool ----
+    let tool = false;
+    let swept = 0;
+    const button = toolButton.current!;
+    const note = toolNote.current!;
+    const nearPile = (y: number) => y > edge - 120 && y < edge + 40;
+    const resting = () => pile.reduce((n, p) => n + (p.flying ? 0 : 1), 0);
+
+    const hold = (on: boolean) => {
+      tool = on;
+      if (!on) root.style.cursor = "";
+      const name = kind ? TOOLS[kind].name : "tool";
+      button.setAttribute("aria-pressed", String(on));
+      button.setAttribute("aria-label", on ? `Put down the ${name}` : `Pick up the ${name} and clear the pile`);
+      button.title = on ? `Put down the ${name} (Esc)` : `Clear the pile with the ${name}`;
+    };
+
+    const sweep = (x: number, y: number, dx: number) => {
+      for (const piece of pile) {
+        if (piece.flying) continue;
+        const py = edge - piece.y;
+        // The head reaches a little further up than across, for deeper piles
+        if (Math.hypot((piece.x - x) / TOOL_REACH, (py - (y + 8)) / (TOOL_REACH * 1.3)) > 1) continue;
+        const c = column(piece.x);
+        heights[c] = Math.max(0, heights[c] - piece.thick);
+        piece.flying = true;
+        piece.gone = true;
+        piece.life = 1;
+        piece.y = py;
+        const dir = dx === 0 ? (Math.random() < 0.5 ? -1 : 1) : Math.sign(dx);
+        piece.vx = dir * (260 + Math.random() * 220) + dx * 12;
+        piece.vy = -(60 + Math.random() * 140);
+        piece.spin = (Math.random() - 0.5) * 10;
+        swept++;
+      }
+      if (swept && resting() === 0) {
+        hold(false);
+        note.textContent = kind === "fireflies" ? `${swept} fireflies caught ✓` : `All clear · ${swept} swept ✓`;
+        note.style.opacity = "1";
+        setTimeout(() => (note.style.opacity = "0"), 2200);
+        swept = 0;
+      }
+    };
+
+    // The tool itself, drawn where the pointer is
+    const drawTool = (x: number, y: number) => {
+      if (!kind) return;
+      const css = getComputedStyle(root);
+      const fg = css.getPropertyValue("--fg").trim();
+      const accent = css.getPropertyValue("--accent").trim();
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.translate(x, y + 8);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.5;
+      if (kind !== "fireflies") {
+        // Handle, leaning back up and to the right
+        ctx.beginPath();
+        ctx.moveTo(4, -6);
+        ctx.lineTo(34, -64);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = accent;
+      ctx.fillStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (kind === "leaves") {
+        // Rake: a bar with tines
+        ctx.moveTo(-14, -4);
+        ctx.lineTo(18, -10);
+        for (let i = 0; i <= 5; i++) {
+          const tx = -14 + i * 6.4;
+          const ty = -4 - i * 1.2;
+          ctx.moveTo(tx, ty);
+          ctx.lineTo(tx - 1, ty + 8);
+        }
+        ctx.stroke();
+      } else if (kind === "snow") {
+        // Shovel: a wide scoop
+        ctx.moveTo(-12, 2);
+        ctx.lineTo(14, 2);
+        ctx.lineTo(10, -10);
+        ctx.lineTo(-8, -10);
+        ctx.closePath();
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+      } else if (kind === "petals") {
+        // Broom: a fan of bristles
+        ctx.moveTo(0, -10);
+        ctx.lineTo(-14, 4);
+        ctx.lineTo(12, 4);
+        ctx.closePath();
+        ctx.globalAlpha = 0.85;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = fg;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = -10; i <= 9; i += 4) {
+          ctx.moveTo(i * 0.3, -8);
+          ctx.lineTo(i, 4);
+        }
+        ctx.stroke();
+      } else {
+        // Jar: glows brighter with every firefly caught
+        ctx.globalAlpha = Math.min(0.15 + swept * 0.12, 0.8);
+        ctx.shadowColor = css.getPropertyValue("--sun").trim();
+        ctx.shadowBlur = 8 + swept * 2;
+        ctx.fillStyle = ctx.shadowColor;
+        ctx.fillRect(-9, -22, 18, 20);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = fg;
+        ctx.strokeRect(-10, -24, 20, 23);
+        ctx.fillStyle = fg;
+        ctx.fillRect(-11, -28, 22, 4);
+      }
+      ctx.restore();
+    };
+
+    // The button sits on the footer's edge, at the right, once there's a pile
+    const placeButton = () => {
+      const show = kind !== null && edge < h - 20 && (tool || (resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs")));
+      button.style.display = show ? "grid" : "none";
+      note.style.top = button.style.top = `${edge - 46}px`;
+    };
+
+    const onToolClick = () => hold(!tool);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && tool && hold(false);
+    button.addEventListener("click", onToolClick);
+    addEventListener("keydown", onKey);
 
     const draw = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -281,6 +458,11 @@ export default function SeasonSky() {
         if (kind === "fireflies") {
           p.x += Math.cos(t * 0.3 + p.phase) * p.speed * speed * dt;
           p.y += Math.sin(t * 0.4 + p.phase * 1.3) * p.speed * speed * dt;
+          // A slow drift too, so over time they wander the whole page (and
+          // some find the footer)
+          p.x += p.spin * 8 * speed * dt;
+          p.y += p.sway * 0.15 * (p.phase > Math.PI ? 1 : -1) * speed * dt;
+          if (p.y < -20) p.y = h + 10;
         } else {
           p.y += p.speed * speed * dt;
           p.x += Math.cos(t * 0.8 + p.phase) * p.sway * speed * dt;
@@ -293,13 +475,15 @@ export default function SeasonSky() {
         shape(p.x, p.y, p, t, false);
       }
 
+      placeButton();
       if (edge < h + 40) {
         updatePile(dt);
         for (const piece of pile) {
           const y = piece.flying ? piece.y : edge - piece.y;
-          if (y > -20 && y < h + 20) shape(piece.x, y, piece, t, !piece.flying);
+          if (y > -20 && y < h + 20) shape(piece.x, y, piece, t, !piece.flying, piece.life ?? 1);
         }
       }
+      if (tool && pointer && nearPile(pointer.y)) drawTool(pointer.x, pointer.y);
       ctx.globalAlpha = 1;
       frame = requestAnimationFrame(draw);
     };
@@ -320,6 +504,8 @@ export default function SeasonSky() {
     const stop = () => {
       cancelAnimationFrame(frame);
       frame = 0;
+      hold(false);
+      button.style.display = "none";
       ctx.clearRect(0, 0, w, h);
     };
 
@@ -327,6 +513,8 @@ export default function SeasonSky() {
       stop();
       const theme = THEMES.find((t) => t.id === root.dataset.palette);
       kind = theme?.particles ?? null;
+      hold(false);
+      if (kind) button.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TOOLS[kind].icon}</svg>`;
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const wx = weather();
       if (!kind || reduce || document.hidden || wx === "off") return;
@@ -359,7 +547,7 @@ export default function SeasonSky() {
       resize();
     };
     addEventListener("pointermove", onPointer, { passive: true });
-    addEventListener("touchmove", onTouch, { passive: true });
+    addEventListener("touchmove", onTouch, { passive: false });
     addEventListener("resize", onResize);
 
     return () => {
@@ -370,8 +558,26 @@ export default function SeasonSky() {
       removeEventListener("resize", onResize);
       removeEventListener("pointermove", onPointer);
       removeEventListener("touchmove", onTouch);
+      button.removeEventListener("click", onToolClick);
+      removeEventListener("keydown", onKey);
+      root.style.cursor = "";
     };
   }, []);
 
-  return <canvas ref={canvas} aria-hidden className="pointer-events-none fixed inset-0 z-30 h-full w-full" />;
+  return (
+    <>
+      <canvas ref={canvas} aria-hidden className="pointer-events-none fixed inset-0 z-30 h-full w-full" />
+      {/* The clean-up tool; shown, placed and labelled by the effect above */}
+      <button
+        ref={toolButton}
+        aria-pressed="false"
+        className="fixed right-4 z-30 hidden h-9 w-9 place-items-center rounded-full border border-line bg-bg text-muted shadow-sm transition-colors hover:border-accent hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-accent-fg sm:right-6"
+      />
+      <span
+        ref={toolNote}
+        aria-live="polite"
+        className="pointer-events-none fixed right-16 z-30 -mt-0.5 whitespace-nowrap py-2 font-mono text-xs text-accent opacity-0 transition-opacity duration-500 sm:right-20"
+      />
+    </>
+  );
 }
