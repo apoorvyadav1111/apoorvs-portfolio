@@ -17,6 +17,8 @@ import { featureOn } from "@/lib/features";
 // Once a pile builds up, a tool appears at the end of the footer's edge: a rake
 // for leaves, a shovel for snow, a broom for petals, a jar for fireflies. Pick
 // it up and sweep to clear the pile for good (Esc or the button puts it down).
+// Beside it there's a blower (not for fireflies): it blows the way you move,
+// clearing the pile from a distance and pushing falling things sideways.
 
 type Kind = NonNullable<(typeof THEMES)[number]["particles"]>;
 
@@ -59,6 +61,9 @@ const MAX_FIREFLIES = 6;
 const KICK_REACH = 38; // px around the pointer
 const TOOL_FROM = 12; // pieces in the pile before the tool turns up (fireflies: 4)
 const TOOL_REACH = 30; // px around the tool's head
+const BLOW_REACH = 190; // px of air in front of the blower's nozzle
+const BLOWER_ICON =
+  '<rect x="2" y="9" width="10" height="8" rx="2"/><path d="M12 12h6l3-2v6l-3-2h-6"/><path d="M5 17v3h4v-3"/><path d="M7 9V6h3"/>';
 
 const TOOLS: Record<Kind, { name: string; icon: string }> = {
   leaves: { name: "rake", icon: '<path d="M18 2 6 17"/><path d="M2 15l8 6"/><path d="M3 16l-1.5 2.5M5.5 17.8 4 20.3M8 19.7l-1.5 2.5"/>' },
@@ -76,10 +81,14 @@ const WEATHER = {
 };
 type Weather = keyof typeof WEATHER | "off";
 
+const TOOL_BUTTON =
+  "fixed z-30 hidden h-9 w-9 place-items-center rounded-full border border-line bg-bg text-muted shadow-sm transition-colors hover:border-accent hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-accent-fg";
+
 export default function SeasonSky() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const toolButton = useRef<HTMLButtonElement>(null);
   const toolNote = useRef<HTMLSpanElement>(null);
+  const blowerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -284,6 +293,10 @@ export default function SeasonSky() {
       const dy = pointer ? y - pointer.y : 0;
       pointer = { x, y };
       if (!frame || edge > h) return;
+      if (tool === "blower") {
+        if (Math.abs(dx) > 1) facing = Math.sign(dx);
+        return;
+      }
       if (tool) return sweep(x, y, dx);
       if (Math.hypot(dx, dy) < 2) return;
       for (const piece of pile) {
@@ -314,20 +327,35 @@ export default function SeasonSky() {
     };
 
     // ---- The tool ----
-    let tool = false;
+    let tool: null | "hand" | "blower" = null;
     let swept = 0;
+    let facing = -1; // the blower's nozzle: -1 left, 1 right
     const button = toolButton.current!;
+    const blowerButton = blowerRef.current!;
     const note = toolNote.current!;
     const nearPile = (y: number) => y > edge - 120 && y < edge + 40;
     const resting = () => pile.reduce((n, p) => n + (p.flying ? 0 : 1), 0);
 
-    const hold = (on: boolean) => {
-      tool = on;
-      if (!on) root.style.cursor = "";
-      const name = kind ? TOOLS[kind].name : "tool";
-      button.setAttribute("aria-pressed", String(on));
-      button.setAttribute("aria-label", on ? `Put down the ${name}` : `Pick up the ${name} and clear the pile`);
-      button.title = on ? `Put down the ${name} (Esc)` : `Clear the pile with the ${name}`;
+    const label = (el: HTMLButtonElement, name: string, on: boolean) => {
+      el.setAttribute("aria-pressed", String(on));
+      el.setAttribute("aria-label", on ? `Put down the ${name}` : `Pick up the ${name} and clear the pile`);
+      el.title = on ? `Put down the ${name} (Esc)` : `Clear the pile with the ${name}`;
+    };
+    const hold = (which: typeof tool) => {
+      tool = which;
+      if (!which) root.style.cursor = "";
+      label(button, kind ? TOOLS[kind].name : "tool", which === "hand");
+      label(blowerButton, kind === "snow" ? "snow blower" : "leaf blower", which === "blower");
+    };
+
+    // Put the tool away once the pile is gone
+    const checkClear = () => {
+      if (!swept || resting() > 0) return;
+      hold(null);
+      note.textContent = kind === "fireflies" ? `${swept} fireflies caught ✓` : `All clear · ${swept} swept ✓`;
+      note.style.opacity = "1";
+      setTimeout(() => (note.style.opacity = "0"), 2200);
+      swept = 0;
     };
 
     const sweep = (x: number, y: number, dx: number) => {
@@ -348,13 +376,87 @@ export default function SeasonSky() {
         piece.spin = (Math.random() - 0.5) * 10;
         swept++;
       }
-      if (swept && resting() === 0) {
-        hold(false);
-        note.textContent = kind === "fireflies" ? `${swept} fireflies caught ✓` : `All clear · ${swept} swept ✓`;
-        note.style.opacity = "1";
-        setTimeout(() => (note.style.opacity = "0"), 2200);
-        swept = 0;
+      checkClear();
+    };
+
+    // The blower: a cone of air from the nozzle, the way you last moved
+    const inCone = (x: number, y: number, tipX: number, tipY: number) => {
+      const ahead = (x - tipX) * facing;
+      if (ahead < 0 || ahead > BLOW_REACH || Math.abs(y - tipY) > 14 + ahead * 0.4) return 0;
+      return 1 - ahead / BLOW_REACH;
+    };
+    const blow = (x: number, y: number, dt: number) => {
+      const tipX = x + facing * 30;
+      const tipY = y + 4;
+      for (const piece of pile) {
+        if (piece.flying) continue;
+        const strength = inCone(piece.x, edge - piece.y, tipX, tipY);
+        if (!strength) continue;
+        const c = column(piece.x);
+        heights[c] = Math.max(0, heights[c] - piece.thick);
+        piece.flying = true;
+        piece.gone = true;
+        piece.life = 1;
+        piece.y = edge - piece.y;
+        piece.vx = facing * (350 + 450 * strength + Math.random() * 100);
+        piece.vy = -(80 + Math.random() * 200) * (0.4 + strength);
+        piece.spin = (Math.random() - 0.5) * 14;
+        swept++;
       }
+      // Things still falling get pushed sideways too
+      for (const p of particles) {
+        const strength = inCone(p.x, p.y, tipX, tipY);
+        if (!strength) continue;
+        p.x += facing * 520 * strength * dt;
+        p.y -= 140 * strength * dt;
+      }
+      checkClear();
+    };
+
+    // The blower, with streaks of air rushing out of the nozzle
+    const drawBlower = (x: number, y: number, t: number) => {
+      const css = getComputedStyle(root);
+      const fg = css.getPropertyValue("--fg").trim();
+      const accent = css.getPropertyValue("--accent").trim();
+      ctx.save();
+      ctx.translate(x, y + 4);
+      ctx.scale(facing, 1);
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([7, 9]);
+      ctx.lineDashOffset = -t * 260;
+      ctx.beginPath();
+      for (const k of [-0.3, -0.1, 0.1, 0.3]) {
+        ctx.moveTo(32, 0);
+        ctx.lineTo(32 + BLOW_REACH * 0.8, BLOW_REACH * 0.8 * k);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      // Body, handle and nozzle
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.roundRect(-14, -9, 20, 16, 4);
+      ctx.fill();
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-8, -9);
+      ctx.lineTo(-4, -16);
+      ctx.lineTo(4, -16);
+      ctx.stroke();
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.moveTo(6, -4);
+      ctx.lineTo(28, -3);
+      ctx.lineTo(32, -6);
+      ctx.lineTo(32, 6);
+      ctx.lineTo(28, 3);
+      ctx.lineTo(6, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     };
 
     // The tool itself, drawn where the pointer is
@@ -437,14 +539,17 @@ export default function SeasonSky() {
 
     // The button sits on the footer's edge, at the right, once there's a pile
     const placeButton = () => {
-      const show = kind !== null && edge < h - 20 && (tool || (resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs")));
+      const show = kind !== null && edge < h - 20 && (tool !== null || (resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs")));
       button.style.display = show ? "grid" : "none";
-      note.style.top = button.style.top = `${edge - 46}px`;
+      blowerButton.style.display = show && kind !== "fireflies" ? "grid" : "none";
+      note.style.top = blowerButton.style.top = button.style.top = `${edge - 46}px`;
     };
 
-    const onToolClick = () => hold(!tool);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && tool && hold(false);
+    const onToolClick = () => hold(tool === "hand" ? null : "hand");
+    const onBlowerClick = () => hold(tool === "blower" ? null : "blower");
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && tool && hold(null);
     button.addEventListener("click", onToolClick);
+    blowerButton.addEventListener("click", onBlowerClick);
     addEventListener("keydown", onKey);
 
     const draw = (now: number) => {
@@ -483,7 +588,12 @@ export default function SeasonSky() {
           if (y > -20 && y < h + 20) shape(piece.x, y, piece, t, !piece.flying, piece.life ?? 1);
         }
       }
-      if (tool && pointer && nearPile(pointer.y)) drawTool(pointer.x, pointer.y);
+      if (tool && pointer && nearPile(pointer.y)) {
+        if (tool === "blower") {
+          blow(pointer.x, pointer.y, dt);
+          drawBlower(pointer.x, pointer.y, t);
+        } else drawTool(pointer.x, pointer.y);
+      }
       ctx.globalAlpha = 1;
       frame = requestAnimationFrame(draw);
     };
@@ -504,8 +614,8 @@ export default function SeasonSky() {
     const stop = () => {
       cancelAnimationFrame(frame);
       frame = 0;
-      hold(false);
-      button.style.display = "none";
+      hold(null);
+      button.style.display = blowerButton.style.display = "none";
       ctx.clearRect(0, 0, w, h);
     };
 
@@ -513,8 +623,11 @@ export default function SeasonSky() {
       stop();
       const theme = THEMES.find((t) => t.id === root.dataset.palette);
       kind = theme?.particles ?? null;
-      hold(false);
-      if (kind) button.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TOOLS[kind].icon}</svg>`;
+      hold(null);
+      const svg = (icon: string) =>
+        `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+      if (kind) button.innerHTML = svg(TOOLS[kind].icon);
+      blowerButton.innerHTML = svg(BLOWER_ICON);
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const wx = weather();
       if (!kind || reduce || document.hidden || wx === "off") return;
@@ -559,6 +672,7 @@ export default function SeasonSky() {
       removeEventListener("pointermove", onPointer);
       removeEventListener("touchmove", onTouch);
       button.removeEventListener("click", onToolClick);
+      blowerButton.removeEventListener("click", onBlowerClick);
       removeEventListener("keydown", onKey);
       root.style.cursor = "";
     };
@@ -567,16 +681,13 @@ export default function SeasonSky() {
   return (
     <>
       <canvas ref={canvas} aria-hidden className="pointer-events-none fixed inset-0 z-30 h-full w-full" />
-      {/* The clean-up tool; shown, placed and labelled by the effect above */}
-      <button
-        ref={toolButton}
-        aria-pressed="false"
-        className="fixed right-4 z-30 hidden h-9 w-9 place-items-center rounded-full border border-line bg-bg text-muted shadow-sm transition-colors hover:border-accent hover:text-accent aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-accent-fg sm:right-6"
-      />
+      {/* The clean-up tools; shown, placed and labelled by the effect above */}
+      <button ref={blowerRef} aria-pressed="false" className={`${TOOL_BUTTON} right-15 sm:right-17`} />
+      <button ref={toolButton} aria-pressed="false" className={`${TOOL_BUTTON} right-4 sm:right-6`} />
       <span
         ref={toolNote}
         aria-live="polite"
-        className="pointer-events-none fixed right-16 z-30 -mt-0.5 whitespace-nowrap py-2 font-mono text-xs text-accent opacity-0 transition-opacity duration-500 sm:right-20"
+        className="pointer-events-none fixed right-27 z-30 -mt-0.5 whitespace-nowrap py-2 font-mono text-xs text-accent opacity-0 transition-opacity duration-500 sm:right-29"
       />
     </>
   );
