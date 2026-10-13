@@ -19,6 +19,9 @@ import { featureOn } from "@/lib/features";
 // it up and sweep to clear the pile for good (Esc or the button puts it down).
 // Beside it there's a blower (not for fireflies): it blows the way you move,
 // clearing the pile from a distance and pushing falling things sideways.
+//
+// In spring and summer, grass grows along the footer's edge while you're on
+// the page; once it's long, a lawnmower turns up to cut it (it grows back).
 
 type Kind = NonNullable<(typeof THEMES)[number]["particles"]>;
 
@@ -62,6 +65,14 @@ const KICK_REACH = 38; // px around the pointer
 const TOOL_FROM = 12; // pieces in the pile before the tool turns up (fireflies: 4)
 const TOOL_REACH = 30; // px around the tool's head
 const BLOW_REACH = 190; // px of air in front of the blower's nozzle
+// Grass: one blade every few px, growing from freshly mown to long
+const GRASS_GAP = 4;
+const GRASS_CUT = 2.5; // px, just mown
+const GRASS_LONG = 7; // px on average before the mower turns up
+const GRASS_MAX = 16;
+const GRASS_GROWTH = 4 / 60; // px per second: a few px a minute
+const MOWER_ICON =
+  '<path d="M3 15h13l2-4h-9"/><circle cx="6" cy="18" r="2"/><circle cx="15" cy="18" r="2"/><path d="M18 11l3-7"/>';
 const BLOWER_ICON =
   '<rect x="2" y="9" width="10" height="8" rx="2"/><path d="M12 12h6l3-2v6l-3-2h-6"/><path d="M5 17v3h4v-3"/><path d="M7 9V6h3"/>';
 
@@ -89,6 +100,7 @@ export default function SeasonSky() {
   const toolButton = useRef<HTMLButtonElement>(null);
   const toolNote = useRef<HTMLSpanElement>(null);
   const blowerRef = useRef<HTMLButtonElement>(null);
+  const mowerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -108,6 +120,17 @@ export default function SeasonSky() {
     const weather = () => (root.dataset.weather ?? "normal") as Weather;
     let pile: Piece[] = [];
     let heights: number[] = [];
+    let grass: number[] = []; // blade heights, empty when the season has none
+    let clippings: { x: number; y: number; vx: number; vy: number; life: number; rot: number }[] = [];
+    let mowed = 0;
+    const grassy = () => kind === "petals" || kind === "fireflies";
+    const plant = () => {
+      grass = grassy()
+        ? Array.from({ length: Math.ceil(w / GRASS_GAP) + 1 }, () => GRASS_CUT + Math.random() * 1.5)
+        : [];
+      clippings = [];
+    };
+    const grassAverage = () => (grass.length ? grass.reduce((a, b) => a + b, 0) / grass.length : 0);
     let edge = Infinity; // the footer's top, in viewport px
     const footer = document.querySelector("footer");
 
@@ -293,7 +316,7 @@ export default function SeasonSky() {
       const dy = pointer ? y - pointer.y : 0;
       pointer = { x, y };
       if (!frame || edge > h) return;
-      if (tool === "blower") {
+      if (tool === "blower" || tool === "mower") {
         if (Math.abs(dx) > 1) facing = Math.sign(dx);
         return;
       }
@@ -327,11 +350,12 @@ export default function SeasonSky() {
     };
 
     // ---- The tool ----
-    let tool: null | "hand" | "blower" = null;
+    let tool: null | "hand" | "blower" | "mower" = null;
     let swept = 0;
     let facing = -1; // the blower's nozzle: -1 left, 1 right
     const button = toolButton.current!;
     const blowerButton = blowerRef.current!;
+    const mowerButton = mowerRef.current!;
     const note = toolNote.current!;
     const nearPile = (y: number) => y > edge - 120 && y < edge + 40;
     const resting = () => pile.reduce((n, p) => n + (p.flying ? 0 : 1), 0);
@@ -346,6 +370,9 @@ export default function SeasonSky() {
       if (!which) root.style.cursor = "";
       label(button, kind ? TOOLS[kind].name : "tool", which === "hand");
       label(blowerButton, kind === "snow" ? "snow blower" : "leaf blower", which === "blower");
+      label(mowerButton, "lawnmower", which === "mower");
+      mowerButton.setAttribute("aria-label", which === "mower" ? "Put down the lawnmower" : "Mow the grass");
+      mowerButton.title = which === "mower" ? "Put down the lawnmower (Esc)" : "Mow the grass";
     };
 
     // Put the tool away once the pile is gone
@@ -537,19 +564,152 @@ export default function SeasonSky() {
       ctx.restore();
     };
 
-    // The button sits on the footer's edge, at the right, once there's a pile
+    // ---- The lawn ----
+    const growGrass = (dt: number) => {
+      for (let i = 0; i < grass.length; i++)
+        if (grass[i] < GRASS_MAX) grass[i] += GRASS_GROWTH * speed * dt * (0.6 + ((i * 7) % 5) / 6);
+    };
+
+    const drawGrass = (t: number) => {
+      // Spring is fresh green; summer a deeper, sun-bleached one
+      const shades = kind === "petals" ? ["#6cb34f", "#4f9a3c"] : ["#7d9a3e", "#5f7f33"];
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = "round";
+      for (let s = 0; s < 2; s++) {
+        ctx.strokeStyle = shades[s];
+        ctx.beginPath();
+        for (let i = s; i < grass.length; i += 2) {
+          const x = i * GRASS_GAP + ((i * 13) % 3);
+          const len = grass[i];
+          const sway = Math.sin(t * 1.4 + i * 0.6) * len * 0.15;
+          ctx.moveTo(x, edge);
+          ctx.quadraticCurveTo(x + sway * 0.4, edge - len * 0.6, x + sway, edge - len);
+        }
+        ctx.stroke();
+      }
+      // Clippings
+      ctx.strokeStyle = shades[0];
+      for (const c of clippings) {
+        ctx.globalAlpha = Math.max(0, c.life);
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(c.x + Math.cos(c.rot) * 3, c.y + Math.sin(c.rot) * 3);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const updateClippings = (dt: number) => {
+      clippings = clippings.filter((c) => {
+        c.vy += 500 * dt;
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.rot += 8 * dt;
+        c.life -= dt * 1.4;
+        return c.life > 0;
+      });
+    };
+
+    // Cuts the grass under the mower's deck, throwing clippings out the side;
+    // petals in the way get mulched
+    const mow = (x: number) => {
+      for (let i = Math.max(0, Math.floor((x - 22) / GRASS_GAP)); i <= Math.min(grass.length - 1, (x + 22) / GRASS_GAP); i++) {
+        if (grass[i] <= GRASS_CUT + 0.5) continue;
+        grass[i] = GRASS_CUT + Math.random() * 0.5;
+        mowed++;
+        if (clippings.length < 160)
+          clippings.push({
+            x: i * GRASS_GAP,
+            y: edge - 4,
+            vx: -facing * (60 + Math.random() * 160),
+            vy: -(80 + Math.random() * 180),
+            life: 1,
+            rot: Math.random() * Math.PI,
+          });
+      }
+      for (const piece of pile) {
+        if (piece.flying || Math.abs(piece.x - x) > 22) continue;
+        const c = column(piece.x);
+        heights[c] = Math.max(0, heights[c] - piece.thick);
+        Object.assign(piece, { flying: true, gone: true, life: 0.6, y: edge - piece.y, vx: -facing * 120, vy: -160, spin: 12 });
+      }
+      if (mowed > 20 && grass.every((g) => g <= GRASS_CUT + 0.6)) {
+        hold(null);
+        note.textContent = "Lawn mowed ✓";
+        note.style.opacity = "1";
+        setTimeout(() => (note.style.opacity = "0"), 2200);
+        mowed = 0;
+      }
+    };
+
+    const drawMower = (x: number) => {
+      const css = getComputedStyle(root);
+      const fg = css.getPropertyValue("--fg").trim();
+      const accent = css.getPropertyValue("--accent").trim();
+      ctx.save();
+      // Rolls along the edge, wherever the pointer is up or down
+      ctx.translate(x, edge);
+      ctx.scale(facing, 1);
+      ctx.globalAlpha = 1;
+      // Handle, trailing behind
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-14, -10);
+      ctx.lineTo(-34, -40);
+      ctx.lineTo(-40, -40);
+      ctx.stroke();
+      // Deck and engine
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.roundRect(-20, -14, 40, 10, 4);
+      ctx.fill();
+      ctx.fillStyle = fg;
+      ctx.beginPath();
+      ctx.roundRect(-8, -21, 16, 8, 3);
+      ctx.fill();
+      // Wheels
+      for (const wx of [-13, 13]) {
+        ctx.beginPath();
+        ctx.arc(wx, -3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    };
+
+    // The buttons sit on the footer's edge, at the right, right to left:
+    // the season's tool, the blower, the mower (whichever are on offer)
     const placeButton = () => {
-      const show = kind !== null && edge < h - 20 && (tool !== null || (resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs")));
-      button.style.display = show ? "grid" : "none";
-      blowerButton.style.display = show && kind !== "fireflies" ? "grid" : "none";
-      note.style.top = blowerButton.style.top = button.style.top = `${edge - 46}px`;
+      const visible = edge < h - 20 && kind !== null;
+      const pileReady = resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs");
+      const lawnReady = grass.length > 0 && grassAverage() >= GRASS_LONG && featureOn("eggs");
+      const shown: HTMLElement[] = [];
+      const showIf = (el: HTMLElement, on: boolean) => {
+        el.style.display = on ? "grid" : "none";
+        if (on) shown.push(el);
+      };
+      const toolsOut = tool === "hand" || tool === "blower" || (tool === null && pileReady);
+      showIf(button, visible && toolsOut);
+      showIf(blowerButton, visible && toolsOut && kind !== "fireflies");
+      showIf(mowerButton, visible && (tool === "mower" || (tool === null && lawnReady)));
+      const base = innerWidth >= 640 ? 24 : 16;
+      shown.forEach((el, i) => {
+        el.style.right = `${base + i * 44}px`;
+        el.style.top = `${edge - 46}px`;
+      });
+      note.style.right = `${base + Math.max(shown.length, 1) * 44 + 4}px`;
+      note.style.top = `${edge - 46}px`;
     };
 
     const onToolClick = () => hold(tool === "hand" ? null : "hand");
     const onBlowerClick = () => hold(tool === "blower" ? null : "blower");
+    const onMowerClick = () => hold(tool === "mower" ? null : "mower");
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && tool && hold(null);
     button.addEventListener("click", onToolClick);
     blowerButton.addEventListener("click", onBlowerClick);
+    mowerButton.addEventListener("click", onMowerClick);
     addEventListener("keydown", onKey);
 
     const draw = (now: number) => {
@@ -581,7 +741,10 @@ export default function SeasonSky() {
       }
 
       placeButton();
+      growGrass(dt);
       if (edge < h + 40) {
+        updateClippings(dt);
+        if (grass.length) drawGrass(t);
         updatePile(dt);
         for (const piece of pile) {
           const y = piece.flying ? piece.y : edge - piece.y;
@@ -592,6 +755,9 @@ export default function SeasonSky() {
         if (tool === "blower") {
           blow(pointer.x, pointer.y, dt);
           drawBlower(pointer.x, pointer.y, t);
+        } else if (tool === "mower") {
+          mow(pointer.x);
+          drawMower(pointer.x);
         } else drawTool(pointer.x, pointer.y);
       }
       ctx.globalAlpha = 1;
@@ -615,7 +781,7 @@ export default function SeasonSky() {
       cancelAnimationFrame(frame);
       frame = 0;
       hold(null);
-      button.style.display = blowerButton.style.display = "none";
+      button.style.display = blowerButton.style.display = mowerButton.style.display = "none";
       ctx.clearRect(0, 0, w, h);
     };
 
@@ -628,6 +794,7 @@ export default function SeasonSky() {
         `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
       if (kind) button.innerHTML = svg(TOOLS[kind].icon);
       blowerButton.innerHTML = svg(BLOWER_ICON);
+      mowerButton.innerHTML = svg(MOWER_ICON);
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const wx = weather();
       if (!kind || reduce || document.hidden || wx === "off") return;
@@ -638,6 +805,7 @@ export default function SeasonSky() {
       particles = Array.from({ length: target(wx) }, () => spawn(true, palette));
       pile = [];
       heights = new Array(Math.ceil(w / COLUMN) + 1).fill(0);
+      plant();
       last = performance.now();
       frame = requestAnimationFrame(draw);
     };
@@ -656,6 +824,8 @@ export default function SeasonSky() {
         // The pile's columns no longer line up; start it again
         pile = [];
         heights = new Array(Math.ceil(innerWidth / COLUMN) + 1).fill(0);
+        w = innerWidth;
+        plant();
       }
       resize();
     };
@@ -673,6 +843,7 @@ export default function SeasonSky() {
       removeEventListener("touchmove", onTouch);
       button.removeEventListener("click", onToolClick);
       blowerButton.removeEventListener("click", onBlowerClick);
+      mowerButton.removeEventListener("click", onMowerClick);
       removeEventListener("keydown", onKey);
       root.style.cursor = "";
     };
@@ -682,12 +853,14 @@ export default function SeasonSky() {
     <>
       <canvas ref={canvas} aria-hidden className="pointer-events-none fixed inset-0 z-30 h-full w-full" />
       {/* The clean-up tools; shown, placed and labelled by the effect above */}
-      <button ref={blowerRef} aria-pressed="false" className={`${TOOL_BUTTON} right-15 sm:right-17`} />
-      <button ref={toolButton} aria-pressed="false" className={`${TOOL_BUTTON} right-4 sm:right-6`} />
+      {/* Placed right to left by placeButton() */}
+      <button ref={mowerRef} aria-pressed="false" className={TOOL_BUTTON} />
+      <button ref={blowerRef} aria-pressed="false" className={TOOL_BUTTON} />
+      <button ref={toolButton} aria-pressed="false" className={TOOL_BUTTON} />
       <span
         ref={toolNote}
         aria-live="polite"
-        className="pointer-events-none fixed right-27 z-30 -mt-0.5 whitespace-nowrap py-2 font-mono text-xs text-accent opacity-0 transition-opacity duration-500 sm:right-29"
+        className="pointer-events-none fixed z-30 -mt-0.5 whitespace-nowrap py-2 font-mono text-xs text-accent opacity-0 transition-opacity duration-500"
       />
     </>
   );
