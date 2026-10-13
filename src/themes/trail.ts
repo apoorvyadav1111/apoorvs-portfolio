@@ -14,6 +14,8 @@ export const trail: Theme = {
   radius: "6px",
   pill: "6px",
   grain: 0.05,
+  // Unhurried: a soft rise, cards lean toward the cursor in warm light
+  motion: { reveal: "rise", duration: 800, ease: "cubic-bezier(0.16, 1, 0.3, 1)", stagger: 70, tilt: 3, glow: 0.8 },
   light: {
     bg: "#e8eadf",
     surface: "#dde1d1",

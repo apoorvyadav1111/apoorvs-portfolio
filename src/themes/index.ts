@@ -7,7 +7,7 @@
 // To change the site's look, change DEFAULT_THEME. Visitors can also pick a
 // theme, a font and light/dark mode from the Appearance menu in the header;
 // their choices are remembered in localStorage.
-import type { Palette, Theme } from "./types";
+import type { Motion, Palette, Theme } from "./types";
 import { trail } from "./trail";
 import { riso } from "./riso";
 import { swiss } from "./swiss";
@@ -19,7 +19,7 @@ export const DEFAULT_THEME = "trail";
 // What first-time visitors see: "dark", "light", or "system" (follow the device)
 export const DEFAULT_MODE: "light" | "dark" | "system" = "dark";
 
-export type { Theme, Palette };
+export type { Theme, Palette, Motion };
 
 // Typefaces visitors can apply on top of any theme. "theme" keeps the theme's own.
 export interface FontChoice {
@@ -62,6 +62,12 @@ export function themeCss() {
       `--theme-pill:${t.pill}`,
       `--theme-grain:${t.grain}`,
       `--photo-filter:${t.photoFilter ?? "none"}`,
+      `--reveal:reveal-${t.motion.reveal}`,
+      `--motion-dur:${t.motion.duration}ms`,
+      `--motion-ease:${t.motion.ease}`,
+      `--stagger:${t.motion.stagger}ms`,
+      `--tilt:${t.motion.tilt}deg`,
+      `--glow:${t.motion.glow}`,
     ].join(";");
     return [
       `${sel}{${base}}`,
@@ -80,9 +86,10 @@ export function themeCss() {
 }
 
 // Runs before first paint: restores the visitor's theme, font and light/dark
-// mode. A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
+// mode, and turns on motion (see Motion.tsx) unless the visitor prefers less.
+// A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
 export const themeInitScript = `(function(){var d=document.documentElement,p,f,m;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme")}catch(e){}if(${JSON.stringify(
   THEMES.map((t) => t.id),
 )}.indexOf(p)>-1)d.dataset.palette=p;if(${JSON.stringify(
   FONT_CHOICES.filter((c) => c.display).map((c) => c.id),
-)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m})()`;
+)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m;if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&"IntersectionObserver" in window){d.dataset.motion="";setTimeout(function(){if(d.dataset.motionReady===undefined)delete d.dataset.motion},4000)}})()`;

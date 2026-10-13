@@ -17,7 +17,7 @@ export default function BlogIndex() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pt-20 pb-28 sm:px-6 sm:pt-28">
-      <header className="rise mb-16">
+      <header className="enter mb-16">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">
           Writing
         </p>
@@ -34,7 +34,7 @@ export default function BlogIndex() {
         <p className="text-muted">Nothing published yet — check back soon.</p>
       ) : (
         [...byYear].map(([year, yearPosts]) => (
-          <section key={year} className="mb-12">
+          <section key={year} className="mb-12" data-reveal>
             <h2 className="mb-2 border-b border-line pb-3 font-mono text-xs text-muted">
               {year}
             </h2>

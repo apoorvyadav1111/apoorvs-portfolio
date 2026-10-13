@@ -46,7 +46,7 @@ export default async function PostPage({ params }: Props) {
         <ArrowLeft className="h-4 w-4" /> All writing
       </Link>
 
-      <header className="rise mt-10 mb-12 border-b border-line pb-10">
+      <header className="enter mt-10 mb-12 border-b border-line pb-10">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">
           {formatDate(post.date)} · {post.readingMinutes} min read
         </p>

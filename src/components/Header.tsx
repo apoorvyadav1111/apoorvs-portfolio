@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AppearanceMenu from "./AppearanceMenu";
@@ -15,13 +16,31 @@ const NAV = [
 
 export default function Header({ name }: { name: string }) {
   const pathname = usePathname();
+  const header = useRef<HTMLElement>(null);
+
+  // Phones: slide the bar away while scrolling down, bring it back on the way
+  // up (the CSS only applies it on small screens with motion on)
+  useEffect(() => {
+    let last = scrollY;
+    const onScroll = () => {
+      const el = header.current;
+      if (!el) return;
+      const y = scrollY;
+      const menuOpen = el.querySelector('[aria-expanded="true"]');
+      if (y < 80 || y < last - 4 || menuOpen) el.removeAttribute("data-away");
+      else if (y > last + 4) el.setAttribute("data-away", "");
+      if (Math.abs(y - last) > 4) last = y;
+    };
+    addEventListener("scroll", onScroll, { passive: true });
+    return () => removeEventListener("scroll", onScroll);
+  }, []);
   const initials = name
     .split(" ")
     .map((w) => w[0])
     .join("");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
+    <header ref={header} className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"

@@ -114,6 +114,9 @@ function Plates({
             <button
               onClick={() => onOpen(i)}
               aria-label={`View ${photo.title} full screen`}
+      // Remembered by src, so the grid changing columns doesn't replay it
+      data-reveal={photo.src}
+      data-no-press
               // On wide screens the photo hugs its caption instead of centering
               className={`group relative mx-auto block w-full cursor-zoom-in overflow-hidden bg-surface ${
                 flip ? "lg:order-2 lg:ml-0" : "lg:mr-0"
@@ -339,6 +342,9 @@ function Tile({
     <button
       onClick={onOpen}
       aria-label={`View ${photo.title} full screen`}
+      // Remembered by src, so the grid changing columns doesn't replay it
+      data-reveal={photo.src}
+      data-no-press
       title={square ? photo.title : undefined}
       className={`group relative block w-full cursor-zoom-in overflow-hidden bg-surface ${square ? "aspect-square" : ""}`}
       style={transitionName ? { viewTransitionName: transitionName } : undefined}

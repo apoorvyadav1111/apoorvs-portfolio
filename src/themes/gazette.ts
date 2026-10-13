@@ -17,6 +17,8 @@ export const gazette: Theme = {
   grain: 0.08,
   // Slightly faded, warm, like a photo printed on cheap paper
   photoFilter: "grayscale(0.85) sepia(0.15) contrast(1.08)",
+  // Inked in line by line, like the morning run off the press
+  motion: { reveal: "ink", duration: 750, ease: "cubic-bezier(0.65, 0, 0.35, 1)", stagger: 60, tilt: 1, glow: 0.35 },
   light: {
     bg: "#f2ede1",
     surface: "#e7e0d0",

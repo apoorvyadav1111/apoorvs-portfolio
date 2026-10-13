@@ -17,6 +17,8 @@ export const graphite: Theme = {
   pill: "2px",
   grain: 0.07,
   photoFilter: "grayscale(1) contrast(1.05)",
+  // Slow, like a print in the developer tray
+  motion: { reveal: "develop", duration: 1200, ease: "cubic-bezier(0.25, 0.1, 0.25, 1)", stagger: 90, tilt: 1.5, glow: 0.5 },
   light: {
     bg: "#f4f4f4",
     surface: "#e9e9e9",

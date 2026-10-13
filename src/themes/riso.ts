@@ -14,6 +14,8 @@ export const riso: Theme = {
   radius: "18px",
   pill: "999px",
   grain: 0.08,
+  // Bouncy, a little off-register before it settles
+  motion: { reveal: "misregister", duration: 700, ease: "cubic-bezier(0.34, 1.56, 0.64, 1)", stagger: 55, tilt: 5, glow: 1 },
   light: {
     bg: "#f1f1ee",
     surface: "#e6e6f0",

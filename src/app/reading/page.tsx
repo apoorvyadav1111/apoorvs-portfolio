@@ -12,7 +12,7 @@ export default function ReadingPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pt-20 pb-28 sm:px-6 sm:pt-28">
-      <header className="rise mb-14">
+      <header className="enter mb-14">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">
           Reading
         </p>

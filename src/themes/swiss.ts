@@ -14,6 +14,8 @@ export const swiss: Theme = {
   radius: "0px",
   pill: "0px",
   grain: 0,
+  // Fast and exact: things rise out of a mask; cards stay still
+  motion: { reveal: "wipe", duration: 380, ease: "cubic-bezier(0.83, 0, 0.17, 1)", stagger: 40, tilt: 0, glow: 0 },
   light: {
     bg: "#ffffff",
     surface: "#f2f2f2",

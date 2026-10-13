@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Motion from "@/components/Motion";
 import personal from "@/data/personal.json";
 import { fontVariables } from "@/themes/fonts";
 import { DEFAULT_MODE, DEFAULT_THEME, themeCss, themeInitScript } from "@/themes";
@@ -43,6 +44,7 @@ export default function RootLayout({
         <Header name={personal.name} />
         <div className="flex-1">{children}</div>
         <Footer personal={personal} />
+        <Motion />
       </body>
     </html>
   );

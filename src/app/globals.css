@@ -98,6 +98,131 @@ body::before {
   animation: none;
 }
 
+/* ---- Motion (see src/components/Motion.tsx) --------------------------------
+   Each theme sets --reveal (which keyframes), --motion-dur, --motion-ease,
+   --stagger, --tilt and --glow. Everything is scoped to [data-motion], which is only
+   set when the visitor hasn't asked for reduced motion.
+   Animations fill backwards only, so once finished they leave no transform
+   behind to fight hover effects. */
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+@keyframes reveal-misregister {
+  0% {
+    opacity: 0;
+    transform: translate(-8px, 5px);
+    text-shadow: 7px -5px 0 var(--accent);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(2px, -1px);
+    text-shadow: 4px -3px 0 var(--accent);
+  }
+  75% {
+    text-shadow: 2px -1px 0 var(--accent);
+  }
+  100% {
+    text-shadow: 0 0 0 transparent;
+  }
+}
+@keyframes reveal-wipe {
+  from {
+    transform: translateY(0.5em);
+    clip-path: inset(100% -0.25em -0.25em -0.25em);
+  }
+  to {
+    clip-path: inset(-0.25em);
+  }
+}
+@keyframes reveal-develop {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+@keyframes reveal-ink {
+  from {
+    opacity: 0.15;
+    filter: blur(1.5px);
+    clip-path: inset(-0.25em 100% -0.25em -0.25em);
+  }
+  to {
+    clip-path: inset(-0.25em);
+  }
+}
+
+/* On page load: <span class="enter" style="--i: 2"> enters third */
+[data-motion] .enter {
+  animation: var(--reveal) var(--motion-dur) var(--motion-ease) backwards;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+.enter-word {
+  display: inline-block;
+}
+
+/* On scroll */
+[data-motion] [data-reveal]:not([data-shown]) {
+  opacity: 0;
+}
+[data-motion] [data-reveal][data-shown=""] {
+  animation: var(--reveal) var(--motion-dur) var(--motion-ease) backwards;
+  animation-delay: calc(var(--d, 0) * var(--stagger));
+}
+
+/* Mouse: cards lean toward the cursor, lit by a spotlight that follows it */
+@media (hover: hover) and (pointer: fine) {
+  [data-motion] [data-tilt] {
+    position: relative;
+    transform: perspective(900px) rotateX(calc(var(--ry, 0) * var(--tilt))) rotateY(calc(var(--rx, 0) * var(--tilt)));
+    transition:
+      transform 0.5s var(--motion-ease),
+      translate 0.2s,
+      background-color 0.2s,
+      border-color 0.2s;
+  }
+  [data-motion] [data-tilt]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      circle 14rem at var(--mx, 50%) var(--my, 50%),
+      color-mix(in oklab, var(--accent) 22%, transparent),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  [data-motion] [data-tilt]:hover::after {
+    opacity: var(--glow);
+  }
+}
+
+/* Touch: buttons and cards press in under a finger */
+@media (hover: none) {
+  [data-motion] :is(a, button):not([data-no-press]) {
+    transition: scale 0.15s ease-out;
+  }
+  [data-motion] :is(a, button):not([data-no-press]):active {
+    scale: 0.97;
+  }
+}
+
+/* Phones: the header slides away while scrolling down, back on the way up */
+@media (max-width: 767px) {
+  [data-motion] header[data-away] {
+    translate: 0 -100%;
+  }
+  [data-motion] header {
+    transition: translate 0.3s var(--motion-ease);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise {
     animation: none;

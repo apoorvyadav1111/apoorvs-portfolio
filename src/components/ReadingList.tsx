@@ -48,7 +48,7 @@ export default function ReadingList({ items }: { items: ReadingItem[] }) {
           </h2>
           <ul className="divide-y divide-line">
             {monthItems.map((item) => (
-              <li key={item.url} className="py-7">
+              <li key={item.url} className="py-7" data-reveal>
                 <a
                   href={item.url}
                   target="_blank"

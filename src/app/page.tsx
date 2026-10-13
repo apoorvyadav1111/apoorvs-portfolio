@@ -18,7 +18,7 @@ function SectionHeading({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-10 flex items-end justify-between gap-4 border-b border-line pb-4">
+    <div data-reveal className="mb-10 flex items-end justify-between gap-4 border-b border-line pb-4">
       <div className="flex items-baseline gap-4">
         <span className="font-mono text-xs text-muted">{index}</span>
         <h2 className="display text-4xl sm:text-5xl">
@@ -30,16 +30,40 @@ function SectionHeading({
   );
 }
 
+// Splits text into words that enter one after another (`from` is the first word's
+// place in the page's entrance order). Words follow each other at half the
+// theme's stagger, so a long headline doesn't drag.
+const WORD_STEP = 0.5;
+
+function Words({ text, from }: { text: string; from: number }) {
+  return text
+    .trim()
+    .split(/\s+/)
+    .map((word, i) => (
+      <span key={i}>
+        {i > 0 && " "}
+        <span className="enter enter-word" style={{ "--i": from + i * WORD_STEP } as React.CSSProperties}>
+          {word}
+        </span>
+      </span>
+    ));
+}
+
 export default function Home() {
   const posts = getAllPosts().slice(0, 3);
   const photos = getPhotos();
   const cover = photos[0];
+  const [lead, ...after] = personal.headline.split("—");
+  const rest = after.join("—");
+  const leadCount = lead.trim().split(/\s+/).length;
+  const restCount = rest ? `—${rest}`.trim().split(/\s+/).length : 0;
+  const afterHeadline = 1 + (leadCount + restCount) * WORD_STEP;
 
   return (
     <main className="mx-auto max-w-5xl px-4 sm:px-6">
       {/* Hero */}
-      <section className="rise pt-20 pb-24 sm:pt-28 sm:pb-32">
-        <p className="mb-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted">
+      <section className="pt-20 pb-24 sm:pt-28 sm:pb-32">
+        <p className="enter mb-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
@@ -47,17 +71,17 @@ export default function Home() {
           {personal.currently} · {personal.location}
         </p>
         <h1 className="max-w-4xl display text-5xl leading-[var(--display-leading)] sm:text-7xl">
-          {personal.headline.split("—")[0]}
-          {personal.headline.includes("—") && (
+          <Words text={lead} from={1} />{" "}
+          {rest && (
             <span className="em">
-              —{personal.headline.split("—").slice(1).join("—")}
+              <Words text={`—${rest}`} from={1 + leadCount * WORD_STEP} />
             </span>
           )}
         </h1>
-        <p className="mt-8 max-w-2xl text-lg leading-relaxed text-muted">
+        <p className="enter mt-8 max-w-2xl text-lg leading-relaxed text-muted" style={{ "--i": afterHeadline } as React.CSSProperties}>
           {personal.bio}
         </p>
-        <div className="mt-10 flex flex-wrap gap-3">
+        <div className="enter mt-10 flex flex-wrap gap-3" style={{ "--i": afterHeadline + 1 } as React.CSSProperties}>
           <Link
             href="/#work"
             className="inline-flex items-center gap-2 rounded-pill bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg transition-opacity hover:opacity-85"
@@ -82,6 +106,7 @@ export default function Home() {
           {work.map((job) => (
             <li
               key={`${job.company}-${job.period}`}
+              data-reveal
               className="grid gap-3 py-8 first:pt-0 sm:grid-cols-[180px_1fr] sm:gap-10"
             >
               <p className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1.5">
@@ -108,7 +133,7 @@ export default function Home() {
         </h3>
         <ul className="divide-y divide-line">
           {education.map((e) => (
-            <li key={e.school} className="grid gap-1 py-5 sm:grid-cols-[180px_1fr] sm:gap-10">
+            <li key={e.school} data-reveal className="grid gap-1 py-5 sm:grid-cols-[180px_1fr] sm:gap-10">
               <p className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1">{e.period}</p>
               <div>
                 <p className="font-medium">
@@ -138,6 +163,8 @@ export default function Home() {
                   target: "_blank",
                   rel: "noopener noreferrer",
                 })}
+                data-reveal
+                data-tilt
                 className="group flex flex-col rounded-theme border border-line bg-surface/40 p-6 transition-all hover:-translate-y-0.5 hover:border-fg/30 hover:bg-surface"
               >
                 <div className="flex items-start justify-between gap-4">
@@ -182,7 +209,7 @@ export default function Home() {
           />
           <ul className="divide-y divide-line">
             {posts.map((post) => (
-              <li key={post.slug}>
+              <li key={post.slug} data-reveal>
                 <Link
                   href={`/blog/${post.slug}`}
                   className="group grid gap-2 py-6 first:pt-0 sm:grid-cols-[180px_1fr] sm:gap-10"
@@ -214,6 +241,7 @@ export default function Home() {
           <SectionHeading index="04" title="Photographs" />
           <Link
             href="/photos"
+            data-reveal
             className="group relative block aspect-[4/5] overflow-hidden rounded-theme bg-surface sm:aspect-[21/9]"
           >
             <Image
