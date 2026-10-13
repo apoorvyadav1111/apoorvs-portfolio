@@ -23,6 +23,10 @@ import { featureOn } from "@/lib/features";
 // In spring and summer, grass grows along the footer's edge while you're on
 // the page; once it's long, a lawnmower turns up to cut it (it grows back).
 //
+// In zen mode (/zen, data-zen on <html>) things land on the landscape's ground
+// rather than the footer, there are more of them, bigger and slower, the tools
+// stay away, and the pointer leaves a soft trail that stirs them like wind.
+//
 // During a timelapse (src/lib/timelapse.ts) the seasons hand over instead of
 // resetting: what's falling finishes its fall while new arrivals are the next
 // season's, snow on the footer melts, fireflies fade, leaves stay to be buried
@@ -141,8 +145,13 @@ export default function SeasonSky() {
       clippings = [];
     };
     const grassAverage = () => (grass.length ? grass.reduce((a, b) => a + b, 0) / grass.length : 0);
-    let edge = Infinity; // the footer's top, in viewport px
-    const footer = document.querySelector("footer");
+    let edge = Infinity; // where things land: the footer's top (zen: the ground's), in viewport px
+    const zen = () => root.hasAttribute("data-zen");
+    // Zen ignores "off": the particles are the point of it
+    const weatherNow = (): Weather => (zen() && weather() === "off" ? "normal" : weather());
+    // The pointer's trail and the gust it makes, in zen
+    let trail: { x: number; y: number; age: number }[] = [];
+    const gust = { x: 0, y: 0, vx: 0, vy: 0 };
 
     // Colours come from each kind's own theme, so a season's particles keep
     // theirs while the page blends into the next
@@ -172,7 +181,7 @@ export default function SeasonSky() {
         kind: k,
         x: Math.random() * w,
         y: anywhere || k === "fireflies" ? Math.random() * h : -20,
-        size: k === "snow" ? 4 + Math.random() * 4 : k === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6,
+        size: (k === "snow" ? 4 + Math.random() * 4 : k === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6) * (zen() ? 1.25 : 1),
         speed: k === "snow" ? 15 + Math.random() * 25 : k === "fireflies" ? 8 + Math.random() * 10 : 20 + Math.random() * 25,
         sway: k === "snow" ? 10 : 30 + Math.random() * 30,
         phase: Math.random() * Math.PI * 2,
@@ -382,7 +391,20 @@ export default function SeasonSky() {
         piece.spin = (Math.random() - 0.5) * 12;
       }
     };
+    const stirAt = (x: number, y: number) => {
+      if (!zen()) return;
+      if (trail.length) {
+        const lastPoint = trail[trail.length - 1];
+        gust.vx = (x - lastPoint.x) * 14;
+        gust.vy = (y - lastPoint.y) * 14;
+      }
+      gust.x = x;
+      gust.y = y;
+      trail.push({ x, y, age: 0 });
+      if (trail.length > 40) trail.shift();
+    };
     const onPointer = (e: PointerEvent) => {
+      stirAt(e.clientX, e.clientY);
       kick(e.clientX, e.clientY);
       // Holding a tool over the pile: the tool is the cursor
       if (tool && e.pointerType === "mouse") root.style.cursor = nearPile(e.clientY) ? "none" : "";
@@ -390,7 +412,8 @@ export default function SeasonSky() {
     const onTouch = (e: TouchEvent) => {
       const t = e.touches[0];
       // Sweeping with a finger shouldn't scroll the page
-      if (tool && nearPile(t.clientY) && e.cancelable) e.preventDefault();
+      if (((tool && nearPile(t.clientY)) || zen()) && e.cancelable) e.preventDefault();
+      stirAt(t.clientX, t.clientY);
       kick(t.clientX, t.clientY);
     };
 
@@ -736,7 +759,7 @@ export default function SeasonSky() {
     // The buttons sit on the footer's edge, at the right, right to left:
     // the season's tool, the blower, the mower (whichever are on offer)
     const placeButton = () => {
-      const visible = edge < h - 20 && kind !== null;
+      const visible = edge < h - 20 && kind !== null && !zen();
       const pileReady = resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs");
       const lawnReady = grassy() && grass.length > 0 && grassAverage() >= GRASS_LONG && featureOn("eggs");
       const shown: HTMLElement[] = [];
@@ -771,7 +794,8 @@ export default function SeasonSky() {
       last = now;
       ctx.clearRect(0, 0, w, h);
       const t = now / 1000;
-      edge = footer ? footer.getBoundingClientRect().top : Infinity;
+      const ground = document.querySelector("[data-ground]") ?? document.querySelector("footer");
+      edge = ground ? ground.getBoundingClientRect().top : Infinity;
 
       const coming = arriving();
       for (const p of particles) {
@@ -786,6 +810,15 @@ export default function SeasonSky() {
         } else {
           p.y += p.speed * speed * dt;
           p.x += Math.cos(t * 0.8 + p.phase) * p.sway * speed * dt;
+        }
+        // Zen: the pointer's gust pushes whatever it passes
+        const gx = p.x - gust.x;
+        const gy = p.y - gust.y;
+        const near = gx * gx + gy * gy;
+        if (near < 120 * 120) {
+          const f = 1 - Math.sqrt(near) / 120;
+          p.x += gust.vx * f * dt;
+          p.y += gust.vy * f * 0.6 * dt;
         }
         // Out of season, things fade rather than linger: fireflies (they never
         // fall off the page) as soon as the next season blends in, anything
@@ -814,6 +847,29 @@ export default function SeasonSky() {
           if (y > -20 && y < h + 20) shape(piece.x, y, piece, t, !piece.flying, piece.life ?? 1);
         }
       }
+      // Zen: the pointer's trail, fading behind it
+      if (trail.length) {
+        for (const pt of trail) pt.age += dt;
+        trail = trail.filter((pt) => pt.age < 0.8);
+        const fg = (kind ? paletteOf(kind) : { fg: "#888888" }).fg;
+        ctx.strokeStyle = fg;
+        ctx.lineCap = "round";
+        for (let i = 1; i < trail.length; i++) {
+          const a = trail[i - 1];
+          const b = trail[i];
+          const life = 1 - b.age / 0.8;
+          ctx.globalAlpha = 0.28 * life;
+          ctx.lineWidth = 1 + 3 * life;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+      gust.vx *= Math.pow(0.02, dt);
+      gust.vy *= Math.pow(0.02, dt);
+
       if (tool && pointer && nearPile(pointer.y)) {
         if (tool === "blower") {
           blow(pointer.x, pointer.y, dt);
@@ -830,13 +886,13 @@ export default function SeasonSky() {
     };
 
     const target = (wx: keyof typeof WEATHER, k = kind) =>
-      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (w * h)) / (1440 * 900))) : 0;
+      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (zen() ? 1.6 : 1) * (w * h)) / (1440 * 900))) : 0;
 
     // A new speed setting: adjust in place, keeping what's on screen and the pile
     const onWeather = () => {
-      const wx = weather();
+      const wx = weatherNow();
       if (wx === "off" || !frame) return start();
-      speed = WEATHER[wx].speed;
+      speed = WEATHER[wx].speed * (zen() ? 0.7 : 1);
       const n = target(wx);
       if (n < particles.length) particles = particles.slice(0, n);
       while (kind && particles.length < n) particles.push(spawn(false, kind));
@@ -859,7 +915,7 @@ export default function SeasonSky() {
       hold(null);
       if (kind) {
         button.innerHTML = svg(TOOLS[kind].icon);
-        const wx = weather();
+        const wx = weatherNow();
         const n = target(wx === "off" ? "normal" : wx);
         while (particles.length < n) particles.push(spawn(false, kind));
       }
@@ -875,10 +931,10 @@ export default function SeasonSky() {
       blowerButton.innerHTML = svg(BLOWER_ICON);
       mowerButton.innerHTML = svg(MOWER_ICON);
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const wx = weather();
+      const wx = weatherNow();
       if (!kind || reduce || document.hidden || wx === "off") return;
       resize();
-      speed = WEATHER[wx].speed;
+      speed = WEATHER[wx].speed * (zen() ? 0.7 : 1);
       particles = Array.from({ length: target(wx) }, () => spawn(true, kind!));
       pile = [];
       heights = new Array(Math.ceil(w / COLUMN) + 1).fill(0);
@@ -892,7 +948,7 @@ export default function SeasonSky() {
     const observer = new MutationObserver(onPalette);
     observer.observe(root, { attributes: true, attributeFilter: ["data-palette"] });
     const modeObserver = new MutationObserver(start);
-    modeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    modeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme", "data-zen"] });
     const weatherObserver = new MutationObserver(onWeather);
     weatherObserver.observe(root, { attributes: true, attributeFilter: ["data-weather"] });
     document.addEventListener("visibilitychange", start);

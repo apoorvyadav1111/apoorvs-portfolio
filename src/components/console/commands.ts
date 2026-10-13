@@ -475,6 +475,12 @@ export const COMMANDS: Record<string, Command> = {
       sh.print(`season: ${arg}. ${t.name} is on, and it's the seasonal theme on offer until this tab closes (season auto to stop).`, "accent");
     },
   },
+  zen: {
+    group: "Fun",
+    usage: "zen",
+    about: "nothing to read, just the seasons going by (Esc to come back)",
+    run: (sh) => sh.go("/zen"),
+  },
   timelapse: {
     group: "Root",
     usage: "timelapse [on [seconds]|off]",

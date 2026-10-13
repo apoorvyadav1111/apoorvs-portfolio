@@ -392,6 +392,26 @@ body::before {
   user-select: none;
 }
 
+/* Zen mode (/zen): only the seasons. Everything else steps aside. */
+[data-zen] header,
+[data-zen] footer,
+[data-zen] .doze,
+[data-zen] [data-timelapse-badge] {
+  display: none;
+}
+.zen {
+  animation: zen-in 1.6s ease-out both;
+}
+@keyframes zen-in {
+  from {
+    opacity: 0;
+  }
+}
+[data-zen-still],
+[data-zen-still] * {
+  cursor: none;
+}
+
 /* Dozing: after a minute idle the page dims and a few z's float up */
 .doze {
   position: fixed;

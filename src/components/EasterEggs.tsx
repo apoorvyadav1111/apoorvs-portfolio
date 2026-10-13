@@ -82,7 +82,7 @@ export default function EasterEggs({ repo }: { repo: string }) {
       if (root.hasAttribute("data-dozing")) root.removeAttribute("data-dozing");
       clearTimeout(idle);
       idle = window.setTimeout(() => {
-        if (!eggs() || !featureOn("doze") || document.querySelector('[aria-modal="true"]')) return wake();
+        if (!eggs() || !featureOn("doze") || root.hasAttribute("data-zen") || document.querySelector('[aria-modal="true"]')) return wake();
         root.setAttribute("data-dozing", "");
       }, IDLE_MS);
     };

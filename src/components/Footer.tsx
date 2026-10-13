@@ -4,6 +4,7 @@ import path from "node:path";
 import CreditsDialog from "./CreditsDialog";
 import MakeYourOwnDialog from "./MakeYourOwnDialog";
 import TimelapseLink from "./TimelapseLink";
+import Link from "next/link";
 
 interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
@@ -48,6 +49,10 @@ export default function Footer({ personal }: FooterProps) {
           <div>
             <MakeYourOwnDialog prompt={makeYourOwnPrompt} />
             <TimelapseLink />
+            {" · "}
+            <Link href="/zen" className="underline underline-offset-4 transition-colors hover:text-fg">
+              Zen
+            </Link>
           </div>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>

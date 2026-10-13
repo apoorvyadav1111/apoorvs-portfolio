@@ -41,6 +41,7 @@ export default function TimelapseBadge() {
   return (
     <div
       role="status"
+      data-timelapse-badge
       className="rise fixed top-20 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-pill border border-line bg-bg/90 py-1.5 pl-3 pr-1.5 text-xs shadow-lg backdrop-blur"
       style={{ animationDuration: "0.3s" }}
     >
