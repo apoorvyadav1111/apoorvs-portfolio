@@ -4,7 +4,7 @@
     "company": "Asurion Insurance Services",
     "location": "Remote",
     "period": "Sep 2024 - Present",
-    "summary": "Built a deployment dashboard on shared GitHub Actions workflows that cut releases from 5–6 hours to under 2, and replaced a developer-only document workflow with a versioned knowledge-base editor, bringing updates down to about 10 minutes. Migrated services from ECS to EKS with zero downtime, fixed Kafka reliability issues on a system handling about 2.5M requests a day, and added role-based access control, PII-compliance pipelines and integrations with Twilio, Shopify and Amazon Connect.",
+    "summary": "Work on backend and platform engineering for customer-support systems. Areas I've worked in include release tooling on GitHub Actions, a knowledge-base editor, moving services from ECS to EKS, Kafka-based messaging, role-based access control, PII compliance, and integrations with Twilio, Shopify and Amazon Connect.",
     "tech": [
       "Kafka",
       "AWS (ECS, EKS)",
@@ -23,7 +23,7 @@
     "company": "Binghamton University",
     "location": "Binghamton, NY",
     "period": "Jan 2023 - Sep 2024",
-    "summary": "Built an analytics dashboard on the MEVN stack covering 30,000+ applicant records a semester for the enrollment teams, secured with the university's single sign-on (SAML and CAS 3.0 with two-factor authentication). Cut page loads from seconds to milliseconds with Redis caching, and improved search accuracy by 18% by standardizing 60,000+ addresses.",
+    "summary": "Worked on an analytics dashboard for the university's enrollment teams, built on the MEVN stack. This included single sign-on with SAML and CAS 3.0, caching with Redis, and cleaning up address data to improve search.",
     "tech": [
       "Vue",
       "Express",
@@ -39,7 +39,7 @@
     "company": "Tata Consultancy Services",
     "location": "Bengaluru, India",
     "period": "June 2019 - July 2022",
-    "summary": "Built Spark and SparkSQL pipelines for financial crime detection, orchestrating 50+ interdependent jobs that exported 50M+ records a day. Fixed data-skew bottlenecks to cut runtimes by up to 50% and meet a 60-minute SLA, and added load-assurance checks to 60+ jobs to improve data reliability.",
+    "summary": "Worked on Spark and SparkSQL data pipelines for financial crime detection, including job orchestration, performance tuning for data skew, and data-quality checks on the loads.",
     "tech": [
       "Apache Spark",
       "SparkSQL",
