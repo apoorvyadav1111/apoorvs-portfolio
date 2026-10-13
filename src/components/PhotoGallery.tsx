@@ -113,7 +113,7 @@ function Plates({
           >
             <button
               onClick={() => onOpen(i)}
-              aria-label={`View ${photo.title} full screen`}
+              aria-label={`${photo.title}${photo.location ? `, ${photo.location}` : ""}: view full screen`}
       // Remembered by src, so the grid changing columns doesn't replay it
       data-reveal={photo.src}
       data-no-press
@@ -341,7 +341,7 @@ function Tile({
   return (
     <button
       onClick={onOpen}
-      aria-label={`View ${photo.title} full screen`}
+      aria-label={`${photo.title}${photo.location ? `, ${photo.location}` : ""}: view full screen`}
       // Remembered by src, so the grid changing columns doesn't replay it
       data-reveal={photo.src}
       data-no-press
@@ -374,7 +374,7 @@ function Tile({
           <div>
             <p className="display text-2xl">{photo.title}</p>
             {photo.location && (
-              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-white/70">
+              <p className="mt-0.5 font-mono text-xs uppercase tracking-wider text-white/75">
                 {photo.location}
               </p>
             )}

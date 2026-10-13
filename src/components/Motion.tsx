@@ -21,9 +21,18 @@ export default function Motion() {
   useEffect(() => {
     const root = document.documentElement;
     if (!root.hasAttribute("data-motion")) return;
-    root.dataset.motionReady = "";
 
     const seen = new Set<string>();
+
+    // Nothing is hidden until this runs (see globals.css), so whatever is
+    // already on screen stays put rather than vanishing to replay; only what's
+    // further down waits to reveal. Keeps the first paint fast.
+    document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((el) => {
+      if (el.getBoundingClientRect().top >= innerHeight) return;
+      el.setAttribute("data-shown", "instant");
+      if (el.dataset.reveal) seen.add(el.dataset.reveal);
+    });
+    root.dataset.motionReady = "";
 
     const observer = new IntersectionObserver(
       (entries) => {
