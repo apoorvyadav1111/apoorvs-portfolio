@@ -1,5 +1,6 @@
 // One-off celebrations, one per theme, for the easter eggs in EasterEggs.tsx.
 // Everything is drawn in a temporary overlay that removes itself when done.
+import { drawBlossom, drawPetal } from "./blossom";
 
 type Shape = "leaf" | "circle" | "petal" | "splat" | "spark" | "flake";
 
@@ -58,6 +59,7 @@ function burst(b: Burst) {
     };
   });
 
+  const gold = cssVar("--sun"); // blossom centres
   const start = performance.now();
   let last = start;
   const frame = (now: number) => {
@@ -73,7 +75,7 @@ function burst(b: Burst) {
       p.x += p.vx * dt + (b.shape === "leaf" || b.shape === "petal" ? Math.sin(age / 300 + p.rot) * 0.6 : 0);
       p.y += p.vy * dt;
       p.rot += p.spin * dt;
-      draw(ctx, b.shape, p);
+      draw(ctx, b.shape, p, gold);
     }
     if (age < b.life) requestAnimationFrame(frame);
     else canvas.remove();
@@ -85,6 +87,7 @@ function draw(
   ctx: CanvasRenderingContext2D,
   shape: Shape,
   p: { x: number; y: number; size: number; rot: number; color: string },
+  gold: string,
 ) {
   ctx.save();
   ctx.translate(p.x, p.y);
@@ -102,8 +105,9 @@ function draw(
       ctx.fill();
       break;
     case "petal":
-      ctx.ellipse(0, 0, s * 0.8, s * 0.45, 0, 0, Math.PI * 2);
-      ctx.fill();
+      // Mostly loose petals, with the odd whole blossom
+      if (s > 9.5) drawBlossom(ctx, s * 1.4, gold);
+      else drawPetal(ctx, s);
       break;
     case "splat": {
       // An ink dot with a few droplets
@@ -196,7 +200,7 @@ export function celebrate() {
     case "frost":
       return burst({ shape: "flake", colors: [fg, accent], count: 140, from: "top", gravity: 30, spread: 60, drag: 0.8, life: 5000 });
     case "bloom":
-      return burst({ shape: "petal", colors: [accent, fg, sun], count: 90, from: "bottom", gravity: 320, spread: 1900, drag: 0.5, life: 4200 });
+      return burst({ shape: "petal", colors: [accent, "#f4b3c6", "#f9d0dc"], count: 90, from: "bottom", gravity: 320, spread: 1900, drag: 0.5, life: 4200 });
     case "solstice":
       return burst({ shape: "spark", colors: [sun, accent], count: 110, from: "center", gravity: 120, spread: 1000, drag: 0.2, life: 2600 });
     // Trail and Harvest: an armful of leaves thrown into the air

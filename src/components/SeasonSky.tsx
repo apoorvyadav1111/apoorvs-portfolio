@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
+import { drawBlossom, drawPetal } from "./blossom";
 
 // A few particles drifting across the page while a theme with `particles` is
 // on (the seasonal themes): leaves, snow, petals or fireflies. Kept sparse and
@@ -19,6 +20,7 @@ interface Particle {
   phase: number;
   spin: number;
   color: string;
+  whole: boolean; // petals: a whole blossom rather than a single petal
 }
 
 // Particles per 1440×900 of screen
@@ -39,12 +41,14 @@ export default function SeasonSky() {
     let last = 0;
     let w = 0;
     let h = 0;
+    let gold = "";
 
     const colors = () => {
       const css = getComputedStyle(root);
       const v = (name: string) => css.getPropertyValue(name).trim();
       if (kind === "leaves") return [v("--accent"), v("--sun"), v("--muted")];
-      if (kind === "petals") return [v("--accent"), v("--accent"), v("--fg")];
+      // Blossom pinks: the theme's own, plus two soft ones
+      if (kind === "petals") return [v("--accent"), "#f4b3c6", "#f9d0dc"];
       if (kind === "snow") return [v("--fg")];
       return [v("--sun")];
     };
@@ -58,6 +62,7 @@ export default function SeasonSky() {
       phase: Math.random() * Math.PI * 2,
       spin: (Math.random() - 0.5) * 2,
       color: palette[Math.floor(Math.random() * palette.length)],
+      whole: kind === "petals" && Math.random() < 0.3,
     });
 
     const resize = () => {
@@ -123,22 +128,26 @@ export default function SeasonSky() {
           ctx.fill();
           ctx.shadowBlur = 0;
         } else {
-          // Leaves and petals: a tumbling ellipse, narrowing as it turns
-          ctx.globalAlpha = kind === "leaves" ? 0.55 : 0.5;
+          // Leaves and petals tumble, narrowing as they turn edge-on.
+          // Whole blossoms mostly float flat, so they barely narrow.
+          ctx.globalAlpha = kind === "leaves" ? 0.55 : 0.7;
           ctx.save();
           ctx.translate(p.x, p.y);
-          ctx.rotate(t * p.spin + p.phase);
-          ctx.scale(1, Math.abs(Math.sin(t * 1.2 + p.phase)) * 0.5 + 0.5);
-          ctx.beginPath();
+          ctx.rotate(t * p.spin * (p.whole ? 0.4 : 1) + p.phase);
+          const turn = Math.abs(Math.sin(t * 1.2 + p.phase));
+          ctx.scale(1, p.whole ? 0.8 + turn * 0.2 : 0.5 + turn * 0.5);
           if (kind === "leaves") {
             // A pointed leaf: two arcs meeting at the tips
+            ctx.beginPath();
             ctx.moveTo(-p.size, 0);
             ctx.quadraticCurveTo(0, -p.size, p.size, 0);
             ctx.quadraticCurveTo(0, p.size, -p.size, 0);
+            ctx.fill();
+          } else if (p.whole) {
+            drawBlossom(ctx, p.size * 1.6, gold);
           } else {
-            ctx.ellipse(0, 0, p.size * 0.7, p.size * 0.45, 0, 0, Math.PI * 2);
+            drawPetal(ctx, p.size);
           }
-          ctx.fill();
           ctx.restore();
         }
       }
@@ -160,6 +169,7 @@ export default function SeasonSky() {
       if (!kind || reduce || document.hidden) return;
       resize();
       const palette = colors();
+      gold = getComputedStyle(root).getPropertyValue("--sun").trim();
       const count = Math.round((DENSITY[kind] * (w * h)) / (1440 * 900));
       particles = Array.from({ length: Math.max(4, count) }, () => spawn(true, palette));
       last = performance.now();
