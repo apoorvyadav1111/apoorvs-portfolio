@@ -9,6 +9,7 @@ import type { ComponentType } from "react";
 //   ` or ~                       anywhere outside a text field
 //   typing "sudo"                likewise, and it's waiting at the prompt
 //   long-press the header name   touch screens, ~0.7s ([data-console-trigger])
+//   the Appearance menu          its "Open shell" button calls openConsole()
 
 type TerminalProps = { initial: string; onClose: () => void };
 
@@ -18,6 +19,9 @@ let Terminal: ComponentType<TerminalProps> | null = null;
 const load = () => import("./console/Terminal").then((m) => (Terminal = m.default));
 
 const LONG_PRESS_MS = 700;
+
+// For buttons elsewhere (the Appearance menu) that open the console
+export const openConsole = () => dispatchEvent(new Event("open-console"));
 
 const typing = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
@@ -71,6 +75,8 @@ export default function ConsoleTrigger() {
       if (e.type === "click") fired = false;
     };
 
+    const onRequest = () => show("");
+    addEventListener("open-console", onRequest);
     addEventListener("keydown", onKey);
     addEventListener("pointerdown", onDown, { passive: true });
     addEventListener("pointermove", onMove, { passive: true });
@@ -78,6 +84,7 @@ export default function ConsoleTrigger() {
     addEventListener("click", swallow, true);
     addEventListener("contextmenu", swallow, true);
     return () => {
+      removeEventListener("open-console", onRequest);
       removeEventListener("keydown", onKey);
       removeEventListener("pointerdown", onDown);
       removeEventListener("pointermove", onMove);

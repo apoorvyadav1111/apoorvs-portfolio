@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Monitor, Moon, RotateCcw, Sun, SquareTerminal } from "lucide-react";
+import { openConsole } from "./ConsoleTrigger";
 import { DEFAULT_MODE, DEFAULT_THEME, FONT_CHOICES, THEMES, availableThemes, currentSeason } from "@/themes";
 import type { Season, Theme } from "@/themes";
 
@@ -387,14 +388,29 @@ export default function AppearanceMenu() {
             </div>
           </Section>
 
-          {!isDefault && (
+          <div className="mt-4 flex items-center justify-between gap-4 border-t border-line pt-3">
+            {!isDefault ? (
+              <button
+                onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-fg"
+              >
+                <RotateCcw className="h-3 w-3" /> Reset to default
+              </button>
+            ) : (
+              <span />
+            )}
+            {/* The hidden shell, for anyone who'd rather type (also opens with `) */}
             <button
-              onClick={reset}
-              className="mt-4 flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-fg"
+              onClick={() => {
+                setOpen(false);
+                openConsole();
+              }}
+              className="flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-fg"
             >
-              <RotateCcw className="h-3 w-3" /> Reset to default
+              <SquareTerminal className="h-3.5 w-3.5" /> Open shell
+              <kbd className="ml-0.5 hidden rounded border border-line px-1 font-mono text-[10px] sm:inline">`</kbd>
             </button>
-          )}
+          </div>
         </div>
       )}
     </div>
