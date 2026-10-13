@@ -113,7 +113,7 @@ export function themeCss() {
 // mode, and turns on motion (see Motion.tsx) unless the visitor prefers less.
 // A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
 // A saved seasonal theme only applies during its season.
-export const themeInitScript = `(function(){var d=document.documentElement,p,f,m;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme")}catch(e){}var S=${JSON.stringify(
+export const themeInitScript = `(function(){var d=document.documentElement,p,f,m,w;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme");w=localStorage.getItem("weather")}catch(e){}if(w==="off"||w==="slow"||w==="fast")d.dataset.weather=w;var S=${JSON.stringify(
   SEASON_BY_MONTH,
 )},q=new URLSearchParams(location.search).get("season"),s=S.indexOf(q)>-1?q:S[new Date().getMonth()],T=${JSON.stringify(
   Object.fromEntries(THEMES.map((t) => [t.id, t.season ?? ""])),

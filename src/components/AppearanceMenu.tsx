@@ -11,14 +11,17 @@ import type { Season, Theme } from "@/themes";
 
 type Mode = "light" | "dark" | "system";
 
+type Weather = "off" | "slow" | "normal" | "fast";
+
 interface Appearance {
   palette: string;
   font: string;
   mode: Mode;
   resolved: "light" | "dark";
+  weather: Weather;
 }
 
-const SERVER_KEY = `${DEFAULT_THEME}|theme|${DEFAULT_MODE}|${DEFAULT_MODE === "light" ? "light" : "dark"}`;
+const SERVER_KEY = `${DEFAULT_THEME}|theme|${DEFAULT_MODE}|${DEFAULT_MODE === "light" ? "light" : "dark"}|normal`;
 
 function readKey() {
   const d = document.documentElement;
@@ -27,7 +30,7 @@ function readKey() {
     const stored = localStorage.getItem("theme");
     if (stored === "light" || stored === "dark" || stored === "system") mode = stored;
   } catch {}
-  return `${d.dataset.palette ?? DEFAULT_THEME}|${d.dataset.font ?? "theme"}|${mode}|${d.dataset.theme ?? "light"}`;
+  return `${d.dataset.palette ?? DEFAULT_THEME}|${d.dataset.font ?? "theme"}|${mode}|${d.dataset.theme ?? "light"}|${d.dataset.weather ?? "normal"}`;
 }
 
 function subscribe(onChange: () => void) {
@@ -42,8 +45,14 @@ function subscribe(onChange: () => void) {
 }
 
 function useAppearance(): Appearance {
-  const [palette, font, mode, resolved] = useSyncExternalStore(subscribe, readKey, () => SERVER_KEY).split("|");
-  return { palette, font, mode: mode as Mode, resolved: resolved as Appearance["resolved"] };
+  const [palette, font, mode, resolved, weather] = useSyncExternalStore(subscribe, readKey, () => SERVER_KEY).split("|");
+  return {
+    palette,
+    font,
+    mode: mode as Mode,
+    resolved: resolved as Appearance["resolved"],
+    weather: weather as Weather,
+  };
 }
 
 const systemDark = () => matchMedia("(prefers-color-scheme: dark)").matches;
@@ -109,6 +118,22 @@ export function shuffleLook(origin?: { x: number; y: number }) {
     setFont(font);
   }, origin);
 }
+
+// How fast the seasonal particles fall (see SeasonSky.tsx); "normal" is unset
+function setWeather(weather: Weather) {
+  if (weather === "normal") document.documentElement.removeAttribute("data-weather");
+  else document.documentElement.setAttribute("data-weather", weather);
+  save("weather", weather === "normal" ? null : weather);
+}
+
+const WEATHER: { id: Weather; label: string }[] = [
+  { id: "off", label: "Off" },
+  { id: "slow", label: "Slow" },
+  { id: "normal", label: "Normal" },
+  { id: "fast", label: "Fast" },
+];
+
+const PARTICLE_NAMES = { leaves: "Leaves", snow: "Snow", petals: "Petals", fireflies: "Fireflies" };
 
 const pointFrom = (e: React.MouseEvent) =>
   e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : undefined;
@@ -184,17 +209,22 @@ export default function AppearanceMenu() {
   const themes = open ? availableThemes(currentSeason()) : [];
   const regulars = themes.filter((t) => !t.season);
   const seasonal = themes.find((t) => t.season);
+  const current = themes.find((t) => t.id === appearance.palette);
 
   const reset = (e: React.MouseEvent) =>
     transition(() => {
       setPalette(DEFAULT_THEME);
       setFont("theme");
       setMode(DEFAULT_MODE);
+      setWeather("normal");
       save("palette", null);
     }, pointFrom(e));
 
   const isDefault =
-    appearance.palette === DEFAULT_THEME && appearance.font === "theme" && appearance.mode === DEFAULT_MODE;
+    appearance.palette === DEFAULT_THEME &&
+    appearance.font === "theme" &&
+    appearance.mode === DEFAULT_MODE &&
+    appearance.weather === "normal";
 
   return (
     <div className="relative ml-1">
@@ -292,6 +322,30 @@ export default function AppearanceMenu() {
               })}
             </div>
           </Section>
+
+          {/* Only while a theme with falling particles is on */}
+          {current?.particles && (
+            <Section label={PARTICLE_NAMES[current.particles]}>
+              <div className="grid grid-cols-4 rounded-pill border border-line p-0.5" role="radiogroup" aria-label={`${PARTICLE_NAMES[current.particles]} speed`}>
+                {WEATHER.map(({ id, label }) => {
+                  const active = appearance.weather === id;
+                  return (
+                    <button
+                      key={id}
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setWeather(id)}
+                      className={`rounded-pill py-1.5 text-xs transition-colors ${
+                        active ? "bg-fg text-bg" : "text-muted hover:text-fg"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
 
           <Section label="Mode">
             <div className="grid grid-cols-3 rounded-pill border border-line p-0.5" role="radiogroup" aria-label="Color mode">

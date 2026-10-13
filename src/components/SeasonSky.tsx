@@ -51,6 +51,15 @@ const MAX_HEIGHT = 22; // px; deeper than this and things fall behind the footer
 const MAX_FIREFLIES = 6;
 const KICK_REACH = 38; // px around the pointer
 
+// The visitor's speed setting from the Appearance menu (`data-weather` on <html>):
+// how fast things fall, and how many there are
+const WEATHER = {
+  slow: { speed: 0.5, density: 1 },
+  normal: { speed: 1, density: 1 },
+  fast: { speed: 2, density: 1.6 },
+};
+type Weather = keyof typeof WEATHER | "off";
+
 export default function SeasonSky() {
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -67,6 +76,9 @@ export default function SeasonSky() {
     let w = 0;
     let h = 0;
     let gold = "";
+    let speed = 1;
+    let palette: string[] = [];
+    const weather = () => (root.dataset.weather ?? "normal") as Weather;
     let pile: Piece[] = [];
     let heights: number[] = [];
     let edge = Infinity; // the footer's top, in viewport px
@@ -267,11 +279,11 @@ export default function SeasonSky() {
 
       for (const p of particles) {
         if (kind === "fireflies") {
-          p.x += Math.cos(t * 0.3 + p.phase) * p.speed * dt;
-          p.y += Math.sin(t * 0.4 + p.phase * 1.3) * p.speed * dt;
+          p.x += Math.cos(t * 0.3 + p.phase) * p.speed * speed * dt;
+          p.y += Math.sin(t * 0.4 + p.phase * 1.3) * p.speed * speed * dt;
         } else {
-          p.y += p.speed * dt;
-          p.x += Math.cos(t * 0.8 + p.phase) * p.sway * dt;
+          p.y += p.speed * speed * dt;
+          p.x += Math.cos(t * 0.8 + p.phase) * p.sway * speed * dt;
         }
         if (edge < h && landed(p)) Object.assign(p, spawn(kind === "fireflies", [p.color]));
         if (p.y > h + 20) Object.assign(p, spawn(false, [p.color]));
@@ -292,6 +304,19 @@ export default function SeasonSky() {
       frame = requestAnimationFrame(draw);
     };
 
+    const target = (wx: keyof typeof WEATHER) =>
+      Math.max(4, Math.round((DENSITY[kind!] * WEATHER[wx].density * (w * h)) / (1440 * 900)));
+
+    // A new speed setting: adjust in place, keeping what's on screen and the pile
+    const onWeather = () => {
+      const wx = weather();
+      if (wx === "off" || !frame) return start();
+      speed = WEATHER[wx].speed;
+      const n = target(wx);
+      if (n < particles.length) particles = particles.slice(0, n);
+      while (particles.length < n) particles.push(spawn(false, palette));
+    };
+
     const stop = () => {
       cancelAnimationFrame(frame);
       frame = 0;
@@ -303,12 +328,13 @@ export default function SeasonSky() {
       const theme = THEMES.find((t) => t.id === root.dataset.palette);
       kind = theme?.particles ?? null;
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!kind || reduce || document.hidden) return;
+      const wx = weather();
+      if (!kind || reduce || document.hidden || wx === "off") return;
       resize();
-      const palette = colors();
+      palette = colors();
       gold = getComputedStyle(root).getPropertyValue("--sun").trim();
-      const count = Math.round((DENSITY[kind] * (w * h)) / (1440 * 900));
-      particles = Array.from({ length: Math.max(4, count) }, () => spawn(true, palette));
+      speed = WEATHER[wx].speed;
+      particles = Array.from({ length: target(wx) }, () => spawn(true, palette));
       pile = [];
       heights = new Array(Math.ceil(w / COLUMN) + 1).fill(0);
       last = performance.now();
@@ -319,6 +345,8 @@ export default function SeasonSky() {
     // Theme or light/dark changes, and tab visibility
     const observer = new MutationObserver(start);
     observer.observe(root, { attributes: true, attributeFilter: ["data-palette", "data-theme"] });
+    const weatherObserver = new MutationObserver(onWeather);
+    weatherObserver.observe(root, { attributes: true, attributeFilter: ["data-weather"] });
     document.addEventListener("visibilitychange", start);
     // Phones resize as the address bar shows and hides; keep the particles
     const onResize = () => {
@@ -337,6 +365,7 @@ export default function SeasonSky() {
     return () => {
       stop();
       observer.disconnect();
+      weatherObserver.disconnect();
       document.removeEventListener("visibilitychange", start);
       removeEventListener("resize", onResize);
       removeEventListener("pointermove", onPointer);
