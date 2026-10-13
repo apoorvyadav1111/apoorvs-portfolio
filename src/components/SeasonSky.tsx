@@ -133,6 +133,7 @@ export default function SeasonSky() {
     let kind: Kind | null = null;
     let particles: Particle[] = [];
     let frame = 0;
+    let paused = false; // hidden tab: drawing stopped, everything kept
     let last = 0;
     let w = 0;
     let h = 0;
@@ -916,6 +917,7 @@ export default function SeasonSky() {
     const onPalette = () => (root.dataset.timelapse && frame ? handOver() : start());
 
     const start = () => {
+      paused = false;
       stop();
       const theme = THEMES.find((t) => t.id === root.dataset.palette);
       kind = theme?.particles ?? null;
@@ -946,7 +948,21 @@ export default function SeasonSky() {
     addEventListener("sky-plugins", start);
     const weatherObserver = new MutationObserver(onWeather);
     weatherObserver.observe(root, { attributes: true, attributeFilter: ["data-weather"] });
-    document.addEventListener("visibilitychange", start);
+    // Switching away pauses (the browser stops drawing hidden tabs anyway);
+    // coming back carries on from the same moment, pile and lawn included
+    const onVisibility = () => {
+      if (document.hidden) {
+        if (!frame) return;
+        cancelAnimationFrame(frame);
+        frame = 0;
+        paused = true;
+      } else if (paused) {
+        paused = false;
+        last = performance.now();
+        frame = requestAnimationFrame(draw);
+      } else start();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     // Phones resize as the address bar shows and hides; keep the particles
     const onResize = () => {
       if (!frame) return;
@@ -969,7 +985,7 @@ export default function SeasonSky() {
       modeObserver.disconnect();
       removeEventListener("sky-plugins", start);
       weatherObserver.disconnect();
-      document.removeEventListener("visibilitychange", start);
+      document.removeEventListener("visibilitychange", onVisibility);
       removeEventListener("resize", onResize);
       removeEventListener("pointermove", onPointer);
       removeEventListener("touchmove", onTouch);
