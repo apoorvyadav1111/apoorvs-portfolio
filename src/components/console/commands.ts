@@ -166,7 +166,8 @@ export const COMMANDS: Record<string, Command> = {
           const dirs = items.filter((c) => c.dir).map((c) => c.name + "/");
           const files = items.filter((c) => !c.dir).map((c) => c.name);
           if (dirs.length) sh.print(dirs.join("  "), "accent");
-          if (files.length) sh.print(files.join("  "));
+          // Long names (posts, reading) go one per line rather than wrapping mid-name
+          if (files.length) sh.print(files.join(files.some((f) => f.length > 24) ? "\n" : "  "));
           if (!items.length) sh.print("(empty)", "muted");
         }
       }
