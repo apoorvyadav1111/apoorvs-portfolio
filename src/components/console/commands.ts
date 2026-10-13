@@ -13,6 +13,7 @@ import {
 } from "../AppearanceMenu";
 import type { Mode, Weather } from "../AppearanceMenu";
 import { celebrate } from "../celebrate";
+import { startTimelapse, stopTimelapse, timelapseStatus } from "@/lib/timelapse";
 import { FEATURES, featureOn, setFeature } from "@/lib/features";
 import type { Feature } from "@/lib/features";
 import { loadData, dataNow } from "./data";
@@ -93,23 +94,18 @@ function wear(id: string) {
   transition(() => (t.season && t.season !== realSeason() ? setSessionPalette(id) : setPalette(id)));
 }
 
-// Previews a season site-wide for the tab and wears its theme. `passing`
-// (the timelapse) keeps even an in-season theme to the tab, so the visitor's
-// saved theme is never touched.
-function showSeason(season: Season, passing = false) {
+// Previews a season site-wide for the tab and wears its theme
+function showSeason(season: Season) {
   forSession("season", season === realSeason() ? null : season);
-  const id = THEMES.find((x) => x.season === season)!.id;
-  if (passing) transition(() => setSessionPalette(id));
-  else wear(id);
+  wear(THEMES.find((x) => x.season === season)!.id);
 }
 
-// Back to the real season, taking off an out-of-season theme for the saved
-// one (or any tab-only theme, with `all`)
-function backToCalendar(all = false) {
+// Back to the real season, taking off an out-of-season theme for the saved one
+function backToCalendar() {
   const real = realSeason();
   forSession("season", null);
   const now = THEMES.find((t) => t.id === root().dataset.palette);
-  if (now?.season && (all || now.season !== real)) {
+  if (now?.season && now.season !== real) {
     let saved: string | null = null;
     try {
       saved = localStorage.getItem("palette");
@@ -120,21 +116,6 @@ function backToCalendar(all = false) {
       forSession("palette", null);
     });
   }
-}
-
-// The seasons turning on their own (root's `timelapse`). Lives at module level
-// so it keeps going after the console closes, until it's turned off or the
-// page reloads.
-let lapse: { timer: number; every: number } | null = null;
-function stopTimelapse() {
-  if (lapse) clearInterval(lapse.timer);
-  lapse = null;
-}
-function startTimelapse(every: number) {
-  stopTimelapse();
-  const step = () => showSeason(SEASONS[(SEASONS.indexOf(currentSeason()) + 1) % SEASONS.length], true);
-  step();
-  lapse = { timer: window.setInterval(step, every * 1000), every };
 }
 
 function featureState(f: AnyFeature) {
@@ -497,22 +478,22 @@ export const COMMANDS: Record<string, Command> = {
   timelapse: {
     group: "Root",
     usage: "timelapse [on [seconds]|off]",
-    about: "turn the seasons on their own, every few seconds, with the console open or closed (root)",
+    about: "turn the seasons over and over, console open or closed (root; the footer has a once-round version)",
     complete: () => ["on", "off"],
     run: (sh) => {
       const [arg, secs] = sh.args;
-      if (!arg) return sh.print(lapse ? `timelapse: on, a new season every ${lapse.every}s` : "timelapse: off");
+      const now = timelapseStatus();
+      if (!arg) return sh.print(now.running ? `timelapse: on (${now.loop ? "looping" : "once round"}), ${now.season ?? "starting"}` : "timelapse: off");
       if (!sh.root) return sh.print(`timelapse: permission denied (sudo timelapse ${sh.args.join(" ")})`, "err");
       if (arg === "off") {
-        if (!lapse) return sh.print("timelapse: already off", "muted");
+        if (!now.running) return sh.print("timelapse: already off", "muted");
         stopTimelapse();
-        backToCalendar(true);
-        return sh.print(`timelapse: off. Back to ${realSeason()}.`, "accent");
+        return sh.print("timelapse: off, back to your own theme.", "accent");
       }
       if (arg !== "on") return sh.print("usage: timelapse [on [seconds]|off]", "err");
       const every = Math.min(60, Math.max(4, Number(secs) || 8));
-      startTimelapse(every);
-      sh.print(`timelapse: on. A new season every ${every}s; \`timelapse off\` to stop. Close the console to watch.`, "accent");
+      startTimelapse({ every, loop: true });
+      sh.print(`timelapse: on. A new season every ${every}s, looping; \`timelapse off\` to stop. Close the console to watch.`, "accent");
     },
   },
   exit: {

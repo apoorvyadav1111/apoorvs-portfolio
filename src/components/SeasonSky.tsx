@@ -22,10 +22,16 @@ import { featureOn } from "@/lib/features";
 //
 // In spring and summer, grass grows along the footer's edge while you're on
 // the page; once it's long, a lawnmower turns up to cut it (it grows back).
+//
+// During a timelapse (src/lib/timelapse.ts) the seasons hand over instead of
+// resetting: what's falling finishes its fall while new arrivals are the next
+// season's, snow on the footer melts, fireflies fade, leaves stay to be buried
+// by the first snow, and the grass withers or sprouts.
 
 type Kind = NonNullable<(typeof THEMES)[number]["particles"]>;
 
 interface Particle {
+  kind: Kind; // each keeps its own season, so seasons can mix in a timelapse
   x: number;
   y: number;
   size: number;
@@ -35,10 +41,13 @@ interface Particle {
   spin: number;
   color: string;
   whole: boolean; // petals: a whole blossom rather than a single petal
+  fade?: number; // fireflies out of season fade away
+  dead?: boolean; // nothing to replace it with (the timelapse ended on a plain theme)
 }
 
 // Something resting on the footer, or kicked off it and flying
 interface Piece {
+  kind: Kind;
   x: number;
   y: number; // flying: viewport y. Resting: height above the footer's edge
   vx: number;
@@ -52,7 +61,7 @@ interface Piece {
   thick: number; // how much it adds to the pile's height
   flying: boolean;
   gone?: boolean; // swept away by the tool: never settles again
-  life?: number; // swept pieces fade out over a second
+  life?: number; // swept pieces fade out over a second; melting ones slower
 }
 
 // Particles per 1440×900 of screen
@@ -114,9 +123,7 @@ export default function SeasonSky() {
     let last = 0;
     let w = 0;
     let h = 0;
-    let gold = "";
     let speed = 1;
-    let palette: string[] = [];
     const weather = () => (root.dataset.weather ?? "normal") as Weather;
     let pile: Piece[] = [];
     let heights: number[] = [];
@@ -124,9 +131,12 @@ export default function SeasonSky() {
     let clippings: { x: number; y: number; vx: number; vy: number; life: number; rot: number }[] = [];
     let mowed = 0;
     const grassy = () => kind === "petals" || kind === "fireflies";
-    const plant = () => {
+    // Fresh lawn (`sprout`: just coming up, as spring arrives in a timelapse)
+    const plant = (sprout = false) => {
       grass = grassy()
-        ? Array.from({ length: Math.ceil(w / GRASS_GAP) + 1 }, () => GRASS_CUT + Math.random() * 1.5)
+        ? Array.from({ length: Math.ceil(w / GRASS_GAP) + 1 }, () =>
+            sprout ? 0.3 + Math.random() * 0.6 : GRASS_CUT + Math.random() * 1.5,
+          )
         : [];
       clippings = [];
     };
@@ -134,27 +144,49 @@ export default function SeasonSky() {
     let edge = Infinity; // the footer's top, in viewport px
     const footer = document.querySelector("footer");
 
-    const colors = () => {
-      const css = getComputedStyle(root);
-      const v = (name: string) => css.getPropertyValue(name).trim();
-      if (kind === "leaves") return [v("--accent"), v("--sun"), v("--muted")];
+    // Colours come from each kind's own theme, so a season's particles keep
+    // theirs while the page blends into the next
+    const paletteOf = (k: Kind) => {
+      const p = THEMES.find((t) => t.particles === k)![root.dataset.theme === "light" ? "light" : "dark"];
+      return { ...p, sun: p.sun ?? p.fg };
+    };
+    const colors = (k: Kind) => {
+      const p = paletteOf(k);
+      if (k === "leaves") return [p.accent, p.sun, p.muted];
       // Blossom pinks: the theme's own, plus two soft ones
-      if (kind === "petals") return [v("--accent"), "#f4b3c6", "#f9d0dc"];
-      if (kind === "snow") return [v("--fg")];
-      return [v("--sun")];
+      if (k === "petals") return [p.accent, "#f4b3c6", "#f9d0dc"];
+      if (k === "snow") return [p.fg];
+      return [p.sun];
     };
 
-    const spawn = (anywhere: boolean, palette: string[]): Particle => ({
-      x: Math.random() * w,
-      y: anywhere || kind === "fireflies" ? Math.random() * h : -20,
-      size: kind === "snow" ? 4 + Math.random() * 4 : kind === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6,
-      speed: kind === "snow" ? 15 + Math.random() * 25 : kind === "fireflies" ? 8 + Math.random() * 10 : 20 + Math.random() * 25,
-      sway: kind === "snow" ? 10 : 30 + Math.random() * 30,
-      phase: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 2,
-      color: palette[Math.floor(Math.random() * palette.length)],
-      whole: kind === "petals" && Math.random() < 0.3,
-    });
+    // What new arrivals are: the coming season's while a timelapse blends
+    const arriving = (): Kind | null => {
+      const next = root.dataset.seasonNext;
+      if (next) return THEMES.find((t) => t.id === next)?.particles ?? null;
+      return kind;
+    };
+
+    const spawn = (anywhere: boolean, k: Kind): Particle => {
+      const palette = colors(k);
+      return {
+        kind: k,
+        x: Math.random() * w,
+        y: anywhere || k === "fireflies" ? Math.random() * h : -20,
+        size: k === "snow" ? 4 + Math.random() * 4 : k === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6,
+        speed: k === "snow" ? 15 + Math.random() * 25 : k === "fireflies" ? 8 + Math.random() * 10 : 20 + Math.random() * 25,
+        sway: k === "snow" ? 10 : 30 + Math.random() * 30,
+        phase: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 2,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        whole: k === "petals" && Math.random() < 0.3,
+      };
+    };
+    // Replaces a particle that fell off the page or landed, or retires it
+    const renew = (p: Particle, anywhere: boolean) => {
+      const k = arriving();
+      if (k) Object.assign(p, spawn(anywhere || k === "fireflies", k), { fade: undefined });
+      else p.dead = true;
+    };
 
     const resize = () => {
       const dpr = Math.min(devicePixelRatio, 2);
@@ -167,6 +199,7 @@ export default function SeasonSky() {
 
     // One leaf, flake, petal or firefly at (x, y). Resting ones lie still.
     const shape = (x: number, y: number, p: Particle | Piece, t: number, resting: boolean, fade = 1) => {
+      const kind = p.kind;
       ctx.fillStyle = p.color;
       const spin = "rot" in p ? p.rot : t * p.spin * 0.3 + p.phase;
       if (kind === "snow") {
@@ -228,7 +261,7 @@ export default function SeasonSky() {
           ctx.quadraticCurveTo(0, p.size, -p.size, 0);
           ctx.fill();
         } else if (p.whole) {
-          drawBlossom(ctx, p.size * 1.6, gold);
+          drawBlossom(ctx, p.size * 1.6, paletteOf("petals").sun);
         } else {
           drawPetal(ctx, p.size);
         }
@@ -243,17 +276,18 @@ export default function SeasonSky() {
 
     // Adds something to the pile where it landed; false if there's no room
     const settle = (x: number, from: Particle | Piece) => {
-      const fireflies = kind === "fireflies";
-      if (fireflies ? pile.length >= MAX_FIREFLIES : pile.length >= MAX_PIECES) return false;
+      const fireflies = from.kind === "fireflies";
+      if (fireflies ? pile.filter((p) => p.kind === "fireflies").length >= MAX_FIREFLIES : pile.length >= MAX_PIECES) return false;
       const c = column(x);
       if (heights[c] >= MAX_HEIGHT) return false;
-      const thick = fireflies ? 0 : from.size * (kind === "snow" ? 0.3 : 0.35);
+      const thick = fireflies ? 0 : from.size * (from.kind === "snow" ? 0.3 : 0.35);
       pile.push({
+        kind: from.kind,
         x,
         y: heights[c] + thick * 0.5,
         vx: 0,
         vy: 0,
-        rot: fireflies || kind === "snow" ? 0 : lying(),
+        rot: fireflies || from.kind === "snow" ? 0 : lying(),
         spin: 0,
         size: from.size,
         color: from.color,
@@ -272,14 +306,25 @@ export default function SeasonSky() {
     const landed = (p: Particle) => {
       if (tool) return false; // cleaning up: nothing new settles meanwhile
       const surface = edge - heights[column(p.x)];
-      if (kind === "fireflies") return Math.abs(p.y - (edge - 3)) < 2 && settle(p.x, p);
+      if (p.fade !== undefined) return false;
+      if (p.kind === "fireflies") return Math.abs(p.y - (edge - 3)) < 2 && settle(p.x, p);
       return p.y >= surface && p.y < edge + 30 && settle(p.x, p);
     };
 
     // Kicked pieces fly up, fall back and settle again
     const updatePile = (dt: number) => {
       pile = pile.filter((piece) => {
-        if (!piece.flying) return true;
+        if (!piece.flying) {
+          // Out of season (a timelapse moved on): snow melts, fireflies leave;
+          // leaves and petals stay, to be buried or swept
+          const melts = kind === null || ((piece.kind === "snow" || piece.kind === "fireflies") && piece.kind !== kind);
+          if (!melts) return true;
+          piece.life = (piece.life ?? 1) - dt * 0.35 * speed;
+          if (piece.life > 0) return true;
+          const c = column(piece.x);
+          heights[c] = Math.max(0, heights[c] - piece.thick);
+          return false;
+        }
         if (piece.gone) {
           piece.vy += 300 * dt;
           piece.x += piece.vx * dt;
@@ -287,7 +332,7 @@ export default function SeasonSky() {
           piece.rot += piece.spin * dt;
           piece.life = (piece.life ?? 1) - dt * 1.2;
           // Caught fireflies drift into the jar
-          if (kind === "fireflies" && pointer) {
+          if (piece.kind === "fireflies" && pointer) {
             piece.x += (pointer.x - piece.x) * Math.min(1, dt * 6);
             piece.y += (pointer.y - 10 - piece.y) * Math.min(1, dt * 6);
           }
@@ -566,13 +611,22 @@ export default function SeasonSky() {
 
     // ---- The lawn ----
     const growGrass = (dt: number) => {
+      if (!grassy()) {
+        // Autumn and winter in a timelapse: the lawn withers away
+        for (let i = 0; i < grass.length; i++) grass[i] = Math.max(0, grass[i] - 1.2 * speed * dt);
+        if (grass.length && grass.every((g) => g < 0.3)) grass = [];
+        return;
+      }
+      if (!grass.length) plant(true);
+      // Sprouting fast in a timelapse, so there's a lawn before the season ends
+      const rate = root.dataset.timelapse ? 1.2 : GRASS_GROWTH;
       for (let i = 0; i < grass.length; i++)
-        if (grass[i] < GRASS_MAX) grass[i] += GRASS_GROWTH * speed * dt * (0.6 + ((i * 7) % 5) / 6);
+        if (grass[i] < GRASS_MAX) grass[i] += rate * speed * dt * (0.6 + ((i * 7) % 5) / 6);
     };
 
     const drawGrass = (t: number) => {
       // Spring is fresh green; summer a deeper, sun-bleached one
-      const shades = kind === "petals" ? ["#6cb34f", "#4f9a3c"] : ["#7d9a3e", "#5f7f33"];
+      const shades = !grassy() ? ["#a08c58", "#857247"] : kind === "petals" ? ["#6cb34f", "#4f9a3c"] : ["#7d9a3e", "#5f7f33"];
       ctx.globalAlpha = 0.9;
       ctx.lineWidth = 1.4;
       ctx.lineCap = "round";
@@ -684,7 +738,7 @@ export default function SeasonSky() {
     const placeButton = () => {
       const visible = edge < h - 20 && kind !== null;
       const pileReady = resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs");
-      const lawnReady = grass.length > 0 && grassAverage() >= GRASS_LONG && featureOn("eggs");
+      const lawnReady = grassy() && grass.length > 0 && grassAverage() >= GRASS_LONG && featureOn("eggs");
       const shown: HTMLElement[] = [];
       const showIf = (el: HTMLElement, on: boolean) => {
         el.style.display = on ? "grid" : "none";
@@ -719,8 +773,9 @@ export default function SeasonSky() {
       const t = now / 1000;
       edge = footer ? footer.getBoundingClientRect().top : Infinity;
 
+      const coming = arriving();
       for (const p of particles) {
-        if (kind === "fireflies") {
+        if (p.kind === "fireflies") {
           p.x += Math.cos(t * 0.3 + p.phase) * p.speed * speed * dt;
           p.y += Math.sin(t * 0.4 + p.phase * 1.3) * p.speed * speed * dt;
           // A slow drift too, so over time they wander the whole page (and
@@ -732,13 +787,21 @@ export default function SeasonSky() {
           p.y += p.speed * speed * dt;
           p.x += Math.cos(t * 0.8 + p.phase) * p.sway * speed * dt;
         }
-        if (edge < h && landed(p)) Object.assign(p, spawn(kind === "fireflies", [p.color]));
-        if (p.y > h + 20) Object.assign(p, spawn(false, [p.color]));
+        // Out of season, things fade rather than linger: fireflies (they never
+        // fall off the page) as soon as the next season blends in, anything
+        // older than the season just ending once it's gone
+        if ((p.kind === "fireflies" && coming !== "fireflies") || (p.kind !== kind && p.kind !== coming)) {
+          p.fade = (p.fade ?? 1) - dt * 0.45;
+          if (p.fade <= 0) renew(p, false);
+        }
+        if (edge < h && landed(p)) renew(p, p.kind === "fireflies");
+        if (p.y > h + 20) renew(p, false);
         if (p.x < -20) p.x = w + 20;
         if (p.x > w + 20) p.x = -20;
 
-        shape(p.x, p.y, p, t, false);
+        if (!p.dead) shape(p.x, p.y, p, t, false, p.fade ?? 1);
       }
+      if (particles.some((p) => p.dead)) particles = particles.filter((p) => !p.dead);
 
       placeButton();
       growGrass(dt);
@@ -761,11 +824,13 @@ export default function SeasonSky() {
         } else drawTool(pointer.x, pointer.y);
       }
       ctx.globalAlpha = 1;
+      // A timelapse ended on a plain theme: stop once the last of it is gone
+      if (!kind && !particles.length && !pile.length && !grass.length && !clippings.length) return stop();
       frame = requestAnimationFrame(draw);
     };
 
-    const target = (wx: keyof typeof WEATHER) =>
-      Math.max(4, Math.round((DENSITY[kind!] * WEATHER[wx].density * (w * h)) / (1440 * 900)));
+    const target = (wx: keyof typeof WEATHER, k = kind) =>
+      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (w * h)) / (1440 * 900))) : 0;
 
     // A new speed setting: adjust in place, keeping what's on screen and the pile
     const onWeather = () => {
@@ -774,7 +839,7 @@ export default function SeasonSky() {
       speed = WEATHER[wx].speed;
       const n = target(wx);
       if (n < particles.length) particles = particles.slice(0, n);
-      while (particles.length < n) particles.push(spawn(false, palette));
+      while (kind && particles.length < n) particles.push(spawn(false, kind));
     };
 
     const stop = () => {
@@ -785,13 +850,27 @@ export default function SeasonSky() {
       ctx.clearRect(0, 0, w, h);
     };
 
+    const svg = (icon: string) =>
+      `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+
+    // A new theme during a timelapse: hand over to the next season in place
+    const handOver = () => {
+      kind = THEMES.find((t) => t.id === root.dataset.palette)?.particles ?? null;
+      hold(null);
+      if (kind) {
+        button.innerHTML = svg(TOOLS[kind].icon);
+        const wx = weather();
+        const n = target(wx === "off" ? "normal" : wx);
+        while (particles.length < n) particles.push(spawn(false, kind));
+      }
+    };
+    const onPalette = () => (root.dataset.timelapse && frame ? handOver() : start());
+
     const start = () => {
       stop();
       const theme = THEMES.find((t) => t.id === root.dataset.palette);
       kind = theme?.particles ?? null;
       hold(null);
-      const svg = (icon: string) =>
-        `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
       if (kind) button.innerHTML = svg(TOOLS[kind].icon);
       blowerButton.innerHTML = svg(BLOWER_ICON);
       mowerButton.innerHTML = svg(MOWER_ICON);
@@ -799,10 +878,8 @@ export default function SeasonSky() {
       const wx = weather();
       if (!kind || reduce || document.hidden || wx === "off") return;
       resize();
-      palette = colors();
-      gold = getComputedStyle(root).getPropertyValue("--sun").trim();
       speed = WEATHER[wx].speed;
-      particles = Array.from({ length: target(wx) }, () => spawn(true, palette));
+      particles = Array.from({ length: target(wx) }, () => spawn(true, kind!));
       pile = [];
       heights = new Array(Math.ceil(w / COLUMN) + 1).fill(0);
       plant();
@@ -812,8 +889,10 @@ export default function SeasonSky() {
 
     start();
     // Theme or light/dark changes, and tab visibility
-    const observer = new MutationObserver(start);
-    observer.observe(root, { attributes: true, attributeFilter: ["data-palette", "data-theme"] });
+    const observer = new MutationObserver(onPalette);
+    observer.observe(root, { attributes: true, attributeFilter: ["data-palette"] });
+    const modeObserver = new MutationObserver(start);
+    modeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     const weatherObserver = new MutationObserver(onWeather);
     weatherObserver.observe(root, { attributes: true, attributeFilter: ["data-weather"] });
     document.addEventListener("visibilitychange", start);
@@ -836,6 +915,7 @@ export default function SeasonSky() {
     return () => {
       stop();
       observer.disconnect();
+      modeObserver.disconnect();
       weatherObserver.disconnect();
       document.removeEventListener("visibilitychange", start);
       removeEventListener("resize", onResize);

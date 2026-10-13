@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import CreditsDialog from "./CreditsDialog";
 import MakeYourOwnDialog from "./MakeYourOwnDialog";
+import TimelapseLink from "./TimelapseLink";
 
 interface FooterProps {
   personal: { name: string; github: string; linkedin: string };
@@ -45,7 +46,7 @@ export default function Footer({ personal }: FooterProps) {
             <CreditsDialog name={personal.name} />
           </div>
           <div>
-            <MakeYourOwnDialog prompt={makeYourOwnPrompt} />
+            <MakeYourOwnDialog prompt={makeYourOwnPrompt} /> · <TimelapseLink />
           </div>
           <p className="text-xs">Last updated {lastUpdated}</p>
         </div>

@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import Motion from "@/components/Motion";
 import SeasonSky from "@/components/SeasonSky";
 import EasterEggs from "@/components/EasterEggs";
+import TimelapseBadge from "@/components/TimelapseBadge";
 import ConsoleTrigger from "@/components/ConsoleTrigger";
 import personal from "@/data/personal.json";
 import { fontVariables } from "@/themes/fonts";
@@ -49,6 +50,7 @@ export default function RootLayout({
         <Footer personal={personal} />
         <Motion />
         <SeasonSky />
+        <TimelapseBadge />
         <EasterEggs repo="https://github.com/apoorvyadav1111/apoorvs-portfolio" />
         <ConsoleTrigger />
       </body>

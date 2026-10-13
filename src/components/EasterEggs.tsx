@@ -4,9 +4,11 @@ import { useEffect } from "react";
 import { celebrate } from "./celebrate";
 import { shuffleLook } from "./AppearanceMenu";
 import { featureOn } from "@/lib/features";
+import { startTimelapse, timelapseStatus } from "@/lib/timelapse";
 
 // Little surprises, none of them announced:
 //   ↑ ↑ ↓ ↓ ← → ← → B A           a celebration in the current theme's style
+//   typing "seasons"                a year goes by (src/lib/timelapse.ts)
 //   tap [data-egg="celebrate"] 5×  the same, for touch screens
 //   shake the phone                 shuffles the theme and font
 //   a minute without input          the page dozes off until you're back
@@ -31,14 +33,22 @@ export default function EasterEggs({ repo }: { repo: string }) {
       "font: 13px/1.5 ui-sans-serif, system-ui, sans-serif",
     );
 
-    // Konami code
+    // Konami code, and "seasons" typed anywhere outside a text field
     let typed = 0;
+    let word = "";
     const onKey = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       typed = key === KONAMI[typed] ? typed + 1 : key === KONAMI[0] ? 1 : 0;
       if (typed === KONAMI.length) {
         typed = 0;
         party();
+      }
+      const target = e.target as HTMLElement;
+      if (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      word = (word + key).slice(-7);
+      if (word === "seasons" && featureOn("eggs") && !timelapseStatus().running) {
+        word = "";
+        startTimelapse();
       }
     };
 
