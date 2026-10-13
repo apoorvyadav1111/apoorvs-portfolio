@@ -93,6 +93,50 @@ function wear(id: string) {
   transition(() => (t.season && t.season !== realSeason() ? setSessionPalette(id) : setPalette(id)));
 }
 
+// Previews a season site-wide for the tab and wears its theme. `passing`
+// (the timelapse) keeps even an in-season theme to the tab, so the visitor's
+// saved theme is never touched.
+function showSeason(season: Season, passing = false) {
+  forSession("season", season === realSeason() ? null : season);
+  const id = THEMES.find((x) => x.season === season)!.id;
+  if (passing) transition(() => setSessionPalette(id));
+  else wear(id);
+}
+
+// Back to the real season, taking off an out-of-season theme for the saved
+// one (or any tab-only theme, with `all`)
+function backToCalendar(all = false) {
+  const real = realSeason();
+  forSession("season", null);
+  const now = THEMES.find((t) => t.id === root().dataset.palette);
+  if (now?.season && (all || now.season !== real)) {
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem("palette");
+    } catch {}
+    const back = availableThemes(real).find((t) => t.id === saved)?.id ?? DEFAULT_THEME;
+    transition(() => {
+      root().dataset.palette = back;
+      forSession("palette", null);
+    });
+  }
+}
+
+// The seasons turning on their own (root's `timelapse`). Lives at module level
+// so it keeps going after the console closes, until it's turned off or the
+// page reloads.
+let lapse: { timer: number; every: number } | null = null;
+function stopTimelapse() {
+  if (lapse) clearInterval(lapse.timer);
+  lapse = null;
+}
+function startTimelapse(every: number) {
+  stopTimelapse();
+  const step = () => showSeason(SEASONS[(SEASONS.indexOf(currentSeason()) + 1) % SEASONS.length], true);
+  step();
+  lapse = { timer: window.setInterval(step, every * 1000), every };
+}
+
 function featureState(f: AnyFeature) {
   if (f === "particles") return root().dataset.weather !== "off";
   if (f === "motion") return root().hasAttribute("data-motion");
@@ -439,27 +483,36 @@ export const COMMANDS: Record<string, Command> = {
       if (!arg) return sh.print(`season: ${currentSeason()}${currentSeason() !== real ? ` (previewing; really ${real})` : ""}`);
       if (!sh.root) return sh.print(`season: permission denied (sudo season ${arg})`, "err");
       if (arg === "auto") {
-        forSession("season", null);
-        // Take off an out-of-season theme, back to the saved one
-        const now = THEMES.find((t) => t.id === root().dataset.palette);
-        if (now?.season && now.season !== real) {
-          let saved: string | null = null;
-          try {
-            saved = localStorage.getItem("palette");
-          } catch {}
-          const back = availableThemes(real).find((t) => t.id === saved)?.id ?? DEFAULT_THEME;
-          transition(() => {
-            root().dataset.palette = back;
-            forSession("palette", null);
-          });
-        }
+        stopTimelapse();
+        backToCalendar();
         return sh.print(`season: ${real}, by the calendar`, "accent");
       }
       if (!SEASONS.includes(arg as Season)) return sh.print("usage: season [spring|summer|autumn|winter|auto]", "err");
-      forSession("season", arg === real ? null : arg);
+      stopTimelapse();
+      showSeason(arg as Season);
       const t = THEMES.find((x) => x.season === arg)!;
-      wear(t.id);
       sh.print(`season: ${arg}. ${t.name} is on, and it's the seasonal theme on offer until this tab closes (season auto to stop).`, "accent");
+    },
+  },
+  timelapse: {
+    group: "Root",
+    usage: "timelapse [on [seconds]|off]",
+    about: "turn the seasons on their own, every few seconds, with the console open or closed (root)",
+    complete: () => ["on", "off"],
+    run: (sh) => {
+      const [arg, secs] = sh.args;
+      if (!arg) return sh.print(lapse ? `timelapse: on, a new season every ${lapse.every}s` : "timelapse: off");
+      if (!sh.root) return sh.print(`timelapse: permission denied (sudo timelapse ${sh.args.join(" ")})`, "err");
+      if (arg === "off") {
+        if (!lapse) return sh.print("timelapse: already off", "muted");
+        stopTimelapse();
+        backToCalendar(true);
+        return sh.print(`timelapse: off. Back to ${realSeason()}.`, "accent");
+      }
+      if (arg !== "on") return sh.print("usage: timelapse [on [seconds]|off]", "err");
+      const every = Math.min(60, Math.max(4, Number(secs) || 8));
+      startTimelapse(every);
+      sh.print(`timelapse: on. A new season every ${every}s; \`timelapse off\` to stop. Close the console to watch.`, "accent");
     },
   },
   exit: {
