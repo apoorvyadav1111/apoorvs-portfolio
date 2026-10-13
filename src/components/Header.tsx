@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AppearanceMenu from "./AppearanceMenu";
+import { featureOn } from "@/lib/features";
 
 // `wide` links are home-page anchors, hidden on phones to keep the bar on one line
 const NAV = [
@@ -21,12 +22,13 @@ export default function Header({ name }: { name: string }) {
   const clicks = useRef<number[]>([]);
 
   // Easter egg: five quick clicks on the name scramble its letters, which
-  // tumble and resolve left to right
+  // tumble and resolve left to right. (A long press on it opens the console
+  // on touch screens; see ConsoleTrigger.tsx.)
   const onLogoClick = (e: React.MouseEvent) => {
     clicks.current = [...clicks.current.filter((t) => e.timeStamp - t < 2000), e.timeStamp];
     if (clicks.current.length < 5 || scramble !== null) return;
     clicks.current = [];
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || !featureOn("eggs")) return;
     const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#%&*+=?@";
     const steps = 18;
     let step = 0;
@@ -71,6 +73,7 @@ export default function Header({ name }: { name: string }) {
         <Link
           href="/"
           onClick={onLogoClick}
+          data-console-trigger
           className={`display text-xl leading-none hover:text-accent transition-colors ${scramble !== null ? "logo-scramble text-accent" : ""}`}
         >
           <span className="hidden sm:inline">{shown}</span>

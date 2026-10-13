@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import Motion from "@/components/Motion";
 import SeasonSky from "@/components/SeasonSky";
 import EasterEggs from "@/components/EasterEggs";
+import ConsoleTrigger from "@/components/ConsoleTrigger";
 import personal from "@/data/personal.json";
 import { fontVariables } from "@/themes/fonts";
 import { DEFAULT_MODE, DEFAULT_THEME, themeCss, themeInitScript } from "@/themes";
@@ -49,6 +50,7 @@ export default function RootLayout({
         <Motion />
         <SeasonSky />
         <EasterEggs repo="https://github.com/apoorvyadav1111/apoorvs-portfolio" />
+        <ConsoleTrigger />
       </body>
     </html>
   );

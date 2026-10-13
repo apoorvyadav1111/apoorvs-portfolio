@@ -33,11 +33,23 @@ const SEASON_BY_MONTH: Season[] = [
   "summer", "summer", "autumn", "autumn", "autumn", "winter",
 ];
 
-// The season right now. `?season=winter` in the URL previews another one.
-export function currentSeason(): Season {
-  const preview = new URLSearchParams(location.search).get("season");
-  if (SEASON_BY_MONTH.includes(preview as Season)) return preview as Season;
+export const SEASONS: Season[] = ["spring", "summer", "autumn", "winter"];
+
+// The season by the calendar, ignoring any preview
+export function realSeason(): Season {
   return SEASON_BY_MONTH[new Date().getMonth()];
+}
+
+// The season right now. `?season=winter` in the URL previews another one, as
+// does `season winter` in the console as root (kept in sessionStorage, so it
+// lasts until the tab closes).
+export function currentSeason(): Season {
+  let preview = new URLSearchParams(location.search).get("season");
+  try {
+    preview ??= sessionStorage.getItem("season");
+  } catch {}
+  if (SEASON_BY_MONTH.includes(preview as Season)) return preview as Season;
+  return realSeason();
 }
 
 // Themes on offer: the regulars plus this season's
@@ -110,13 +122,17 @@ export function themeCss() {
 }
 
 // Runs before first paint: restores the visitor's theme, font and light/dark
-// mode, and turns on motion (see Motion.tsx) unless the visitor prefers less.
+// mode, any features switched off in the console (as `data-off`, see
+// src/lib/features.ts), and turns on motion (see Motion.tsx) unless the
+// visitor prefers less or switched it off.
 // A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
-// A saved seasonal theme only applies during its season.
-export const themeInitScript = `(function(){var d=document.documentElement,p,f,m,w;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme");w=localStorage.getItem("weather")}catch(e){}if(w==="off"||w==="slow"||w==="fast")d.dataset.weather=w;var S=${JSON.stringify(
+// A saved seasonal theme only applies during its season. The console's root
+// mode can pick any theme for the session: that choice is kept in
+// sessionStorage, never localStorage, so it can't outlast the tab.
+export const themeInitScript = `(function(){var d=document.documentElement,p,f,m,w,o,P,Z;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme");w=localStorage.getItem("weather");o=localStorage.getItem("off");P=sessionStorage.getItem("palette");Z=sessionStorage.getItem("season")}catch(e){}if(w==="off"||w==="slow"||w==="fast")d.dataset.weather=w;if(o&&/^[a-z ]+$/.test(o))d.dataset.off=o;else o="";var S=${JSON.stringify(
   SEASON_BY_MONTH,
-)},q=new URLSearchParams(location.search).get("season"),s=S.indexOf(q)>-1?q:S[new Date().getMonth()],T=${JSON.stringify(
+)},q=new URLSearchParams(location.search).get("season"),s=S.indexOf(q)>-1?q:S.indexOf(Z)>-1?Z:S[new Date().getMonth()],T=${JSON.stringify(
   Object.fromEntries(THEMES.map((t) => [t.id, t.season ?? ""])),
-)};if(p in T&&(!T[p]||T[p]===s))d.dataset.palette=p;if(${JSON.stringify(
+)};if(P in T)d.dataset.palette=P;else if(p in T&&(!T[p]||T[p]===s))d.dataset.palette=p;if(${JSON.stringify(
   FONT_CHOICES.filter((c) => c.display).map((c) => c.id),
-)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m;if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&"IntersectionObserver" in window){d.dataset.motion="";setTimeout(function(){if(d.dataset.motionReady===undefined)delete d.dataset.motion},4000)}})()`;
+)}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m;if((" "+o+" ").indexOf(" motion ")<0&&!matchMedia("(prefers-reduced-motion: reduce)").matches&&"IntersectionObserver" in window){d.dataset.motion="";setTimeout(function(){if(d.dataset.motionReady===undefined)delete d.dataset.motion},4000)}})()`;

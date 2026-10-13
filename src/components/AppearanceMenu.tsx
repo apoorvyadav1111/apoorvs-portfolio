@@ -8,10 +8,11 @@ import type { Season, Theme } from "@/themes";
 // Visitor-facing appearance controls: theme, font and light/dark mode.
 // Choices live as attributes on <html> (read by the CSS from themeCss()) and
 // in localStorage (restored before first paint by themeInitScript).
+// The console (src/components/console) reuses the setters below.
 
-type Mode = "light" | "dark" | "system";
+export type Mode = "light" | "dark" | "system";
 
-type Weather = "off" | "slow" | "normal" | "fast";
+export type Weather = "off" | "slow" | "normal" | "fast";
 
 interface Appearance {
   palette: string;
@@ -66,7 +67,7 @@ function save(key: string, value: string | null) {
 
 // Applies a change, revealing the new look as a circle growing out of the
 // point the visitor clicked. Falls back to an instant switch.
-function transition(update: () => void, origin?: { x: number; y: number }) {
+export function transition(update: () => void, origin?: { x: number; y: number }) {
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!("startViewTransition" in document) || reduceMotion || document.visibilityState !== "visible") {
     update();
@@ -87,18 +88,33 @@ function transition(update: () => void, origin?: { x: number; y: number }) {
     .catch(() => {});
 }
 
-function setPalette(id: string) {
+export function setPalette(id: string) {
   document.documentElement.setAttribute("data-palette", id);
   save("palette", id);
+  forSession("palette", null);
 }
 
-function setFont(id: string) {
+// Root in the console can wear a theme out of season. That lasts only for the
+// session (themeInitScript honours it), leaving the saved choice alone.
+export function setSessionPalette(id: string) {
+  document.documentElement.setAttribute("data-palette", id);
+  forSession("palette", id);
+}
+
+export function forSession(key: string, value: string | null) {
+  try {
+    if (value === null) sessionStorage.removeItem(key);
+    else sessionStorage.setItem(key, value);
+  } catch {}
+}
+
+export function setFont(id: string) {
   if (id === "theme") document.documentElement.removeAttribute("data-font");
   else document.documentElement.setAttribute("data-font", id);
   save("font", id === "theme" ? null : id);
 }
 
-function setMode(mode: Mode) {
+export function setMode(mode: Mode) {
   // Saved explicitly, even "system": an empty setting means the site default
   save("theme", mode === DEFAULT_MODE ? null : mode);
   const resolved = mode === "system" ? (systemDark() ? "dark" : "light") : mode;
@@ -120,10 +136,19 @@ export function shuffleLook(origin?: { x: number; y: number }) {
 }
 
 // How fast the seasonal particles fall (see SeasonSky.tsx); "normal" is unset
-function setWeather(weather: Weather) {
+export function setWeather(weather: Weather) {
   if (weather === "normal") document.documentElement.removeAttribute("data-weather");
   else document.documentElement.setAttribute("data-weather", weather);
   save("weather", weather === "normal" ? null : weather);
+}
+
+// Back to the site's defaults, as a first-time visitor sees it
+export function resetLook() {
+  setPalette(DEFAULT_THEME);
+  setFont("theme");
+  setMode(DEFAULT_MODE);
+  setWeather("normal");
+  save("palette", null);
 }
 
 const WEATHER: { id: Weather; label: string }[] = [
@@ -209,16 +234,10 @@ export default function AppearanceMenu() {
   const themes = open ? availableThemes(currentSeason()) : [];
   const regulars = themes.filter((t) => !t.season);
   const seasonal = themes.find((t) => t.season);
-  const current = themes.find((t) => t.id === appearance.palette);
+  // Not just this season's: root in the console can wear any theme
+  const current = THEMES.find((t) => t.id === appearance.palette);
 
-  const reset = (e: React.MouseEvent) =>
-    transition(() => {
-      setPalette(DEFAULT_THEME);
-      setFont("theme");
-      setMode(DEFAULT_MODE);
-      setWeather("normal");
-      save("palette", null);
-    }, pointFrom(e));
+  const reset = (e: React.MouseEvent) => transition(resetLook, pointFrom(e));
 
   const isDefault =
     appearance.palette === DEFAULT_THEME &&

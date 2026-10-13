@@ -52,3 +52,19 @@ Add `"draft": true` to hide an entry from the live site.
 - Projects: `src/data/projects.json`
 - Look and feel: `src/themes/` (change `DEFAULT_THEME` in `src/themes/index.ts`)
 - Font choices in the Appearance menu: `FONT_CHOICES` in `src/themes/index.ts` (new faces go in `src/themes/fonts.ts`)
+
+## The console
+
+Press <kbd>`</kbd> (or type `sudo`) anywhere on the site, or long-press the name
+in the header on a phone, for a small shell: `help` lists what it can do.
+
+- What it reads (`ls`, `cat`, `neofetch`…) comes from `/console.json`, built
+  from the same content as the pages by `src/app/console.json/route.ts`.
+  Nothing to update by hand: new posts, reading entries, projects and photos
+  show up on the next build.
+- Commands live in `src/components/console/commands.ts`. To add one, add an
+  entry to `COMMANDS` with a `group`, `usage`, `about` and `run`; it appears in
+  `help` and Tab completes it.
+- Features visitors can switch off (`disable eggs`) are in `src/lib/features.ts`.
+- `sudo su` is a playful unlock, not security: it lets a visitor wear any theme
+  in any season for the rest of the tab. Nothing secret sits behind it.

@@ -3,14 +3,16 @@
 import { useEffect } from "react";
 import { celebrate } from "./celebrate";
 import { shuffleLook } from "./AppearanceMenu";
+import { featureOn } from "@/lib/features";
 
 // Little surprises, none of them announced:
 //   ↑ ↑ ↓ ↓ ← → ← → B A           a celebration in the current theme's style
 //   tap [data-egg="celebrate"] 5×  the same, for touch screens
 //   shake the phone                 shuffles the theme and font
 //   a minute without input          the page dozes off until you're back
-//   the browser console             says hello
-// Motion-heavy ones are skipped for visitors who prefer reduced motion.
+//   the browser console             says hello (and points at the site's own shell)
+// Motion-heavy ones are skipped for visitors who prefer reduced motion, and
+// all of them for visitors who ran `disable eggs` in that shell.
 
 const KONAMI = ["arrowup", "arrowup", "arrowdown", "arrowdown", "arrowleft", "arrowright", "arrowleft", "arrowright", "b", "a"];
 const IDLE_MS = 60_000;
@@ -20,10 +22,11 @@ export default function EasterEggs({ repo }: { repo: string }) {
   useEffect(() => {
     const root = document.documentElement;
     const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const party = () => !reduce() && celebrate();
+    const eggs = () => featureOn("eggs") && !reduce();
+    const party = () => eggs() && celebrate();
 
     console.log(
-      "%c  A Y  %c\n\nHi! Looking under the hood?\nThis site is open source: " + repo + "\n(And try the Konami code.)",
+      "%c  A Y  %c\n\nHi! Looking under the hood?\nThis site is open source: " + repo + "\n(And try the Konami code, or press ` on the page for a shell.)",
       "font: 700 28px/1.4 ui-monospace, monospace; background: #111; color: #f3e3a8; padding: 4px 12px; border-radius: 4px",
       "font: 13px/1.5 ui-sans-serif, system-ui, sans-serif",
     );
@@ -55,7 +58,7 @@ export default function EasterEggs({ repo }: { repo: string }) {
     let lastShake = 0;
     const onMotion = (e: DeviceMotionEvent) => {
       const a = e.acceleration;
-      if (!a || reduce()) return;
+      if (!a || !eggs()) return;
       const force = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0);
       if (force > SHAKE && e.timeStamp - lastShake > 1500) {
         lastShake = e.timeStamp;
@@ -69,7 +72,7 @@ export default function EasterEggs({ repo }: { repo: string }) {
       if (root.hasAttribute("data-dozing")) root.removeAttribute("data-dozing");
       clearTimeout(idle);
       idle = window.setTimeout(() => {
-        if (reduce() || document.querySelector('[aria-modal="true"]')) return wake();
+        if (!eggs() || !featureOn("doze") || document.querySelector('[aria-modal="true"]')) return wake();
         root.setAttribute("data-dozing", "");
       }, IDLE_MS);
     };

@@ -274,6 +274,18 @@ body::before {
   }
 }
 
+/* Features switched off in the console (see src/lib/features.ts). After the
+   rules above so these win at equal specificity. */
+[data-off~="tilt"] [data-tilt] {
+  transform: none;
+}
+[data-off~="tilt"] [data-tilt]::after {
+  content: none;
+}
+[data-off~="grain"] body::before {
+  content: none;
+}
+
 /* ---- Easter eggs (see src/components/EasterEggs.tsx and celebrate.ts) ---- */
 @keyframes egg-rule-y {
   from {
@@ -359,6 +371,25 @@ body::before {
   100% {
     transform: perspective(400px) rotateX(360deg);
   }
+}
+
+/* The console (src/components/console): output types itself in, line by line.
+   The header name opens it on a long press, so no callout or selection there. */
+@media (prefers-reduced-motion: no-preference) {
+  .console-line {
+    animation: console-type 0.3s steps(16, end) both;
+    animation-delay: calc(var(--n, 0) * 15ms);
+  }
+}
+@keyframes console-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+[data-console-trigger] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Dozing: after a minute idle the page dims and a few z's float up */

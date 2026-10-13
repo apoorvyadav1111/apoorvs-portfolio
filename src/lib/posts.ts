@@ -79,6 +79,11 @@ export function getPost(slug: string): Post | undefined {
   return getAllPosts().find((p) => p.slug === slug);
 }
 
+// A post's Markdown as written, without its frontmatter (for the console's `cat`)
+export function getPostMarkdown(slug: string) {
+  return parseFrontmatter(fs.readFileSync(path.join(POSTS_DIR, `${slug}.md`), "utf8")).body.trim();
+}
+
 export function formatDate(date: string, style: "long" | "short" = "long") {
   if (!date) return "";
   return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
