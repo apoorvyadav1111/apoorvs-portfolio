@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import type { Season } from "@/themes";
 
-// The landscape behind zen mode (/zen): sky glow, a sun by day or tonight's
-// real moon phase by night, drifting clouds, stars, soft hills along the bottom, and a few things only one season has:
+// The landscape behind zen mode (/zen): sky glow, a sun by day or a moon by
+// night (slowly waxing and waning), drifting clouds, stars, soft hills along the bottom, and a few things only one season has:
 // spring showers and butterflies, summer's drifting dandelion seeds, autumn's
 // birds heading south, winter's aurora. Colours come from the theme's CSS
 // variables every frame, so they follow a timelapse's blend; each season's
@@ -33,13 +33,8 @@ interface Flock {
 
 const SEASONS: Season[] = ["spring", "summer", "autumn", "winter"];
 
-// Where the moon is in its cycle right now, 0 new → 0.5 full → 1 new again,
-// counted from a known new moon (6 Jan 2000, 18:14 UTC)
-function moonPhase(now = Date.now()) {
-  const SYNODIC = 29.530588853 * 86400000;
-  const p = (now - Date.UTC(2000, 0, 6, 18, 14)) / SYNODIC;
-  return p - Math.floor(p);
-}
+// The moon goes through a whole cycle, new to full and back, this often
+const LUNAR_CYCLE = 120; // seconds
 
 interface Cloud {
   x: number; // 0–1, drifting right
@@ -90,7 +85,7 @@ export default function ZenScene() {
     const butterflies: Butterfly[] = Array.from({ length: 3 }, (_, i) => ({ x: Math.random(), y: 0.45 + Math.random() * 0.25, phase: i * 2, dir: Math.random() < 0.5 ? -1 : 1 }));
     const seeds: Seed[] = Array.from({ length: 22 }, () => ({ x: Math.random(), y: Math.random(), drift: Math.random() * 6, size: 2 + Math.random() * 2 }));
     let flock: Flock | null = null;
-    const phase = moonPhase();
+    let phase = 0.12; // a young crescent to start; see LUNAR_CYCLE
     // A handful of clouds, each a cluster of overlapping puffs
     const clouds: Cloud[] = Array.from({ length: 7 }, (_, i) => ({
       x: i / 7 + Math.random() * 0.1,
@@ -141,7 +136,9 @@ export default function ZenScene() {
 
       // Sky glow from the sun or moon, upper right
       const cx = w * 0.78;
-      const cy = h * (presence.autumn > 0.5 ? 0.3 : 0.2);
+      // Lower in autumn, easing there with the season rather than jumping
+      const cy = h * (0.2 + 0.1 * presence.autumn);
+      if (!still) phase = (phase + dt / LUNAR_CYCLE) % 1;
       const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.6);
       glow.addColorStop(0, dark ? rgba(fgC, 0.1) : rgba(sunC, 0.28));
       glow.addColorStop(1, rgba(dark ? fgC : sunC, 0));

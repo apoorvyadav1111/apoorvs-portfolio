@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ZenMode from "@/components/ZenMode";
+import ZenMode from "@/components/zen/ZenMode";
 
 export const metadata: Metadata = {
   title: "Zen",

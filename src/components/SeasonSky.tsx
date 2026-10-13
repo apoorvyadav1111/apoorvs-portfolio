@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import { drawBlossom, drawPetal } from "./blossom";
 import { featureOn } from "@/lib/features";
+import { skyPlugins, skySettings } from "@/lib/sky";
 
 // A few particles drifting across the page while a theme with `particles` is
 // on (the seasonal themes): leaves, snow, petals or fireflies. Kept sparse and
@@ -23,9 +24,9 @@ import { featureOn } from "@/lib/features";
 // In spring and summer, grass grows along the footer's edge while you're on
 // the page; once it's long, a lawnmower turns up to cut it (it grows back).
 //
-// In zen mode (/zen, data-zen on <html>) things land on the landscape's ground
-// rather than the footer, there are more of them, bigger and slower, the tools
-// stay away, and the pointer leaves a soft trail that stirs them like wind.
+// Other features add to the sky through src/lib/sky.ts (zen mode's wind and
+// trail, say) and can lay down their own ground: an element marked
+// [data-ground] takes the footer's place as where things land.
 //
 // During a timelapse (src/lib/timelapse.ts) the seasons hand over instead of
 // resetting: what's falling finishes its fall while new arrivals are the next
@@ -75,9 +76,9 @@ const ORDER: Kind[] = ["petals", "fireflies", "leaves", "snow"];
 
 // How many of each fall at once, per 1440×900 of screen (it scales with the
 // window). The visitor's speed setting multiplies this (WEATHER below), as
-// does zen mode (ZEN_DENSITY). Lower these for a quieter page.
+// do plug-ins (src/lib/sky.ts; zen sets its own in src/components/zen). Lower
+// these for a quieter page.
 const DENSITY: Record<Kind, number> = { leaves: 8, snow: 18, petals: 9, fireflies: 12 };
-const ZEN_DENSITY = 1.25;
 const COLUMN = 8; // px; the pile's height is tracked per column
 const MAX_PIECES = 110;
 const MAX_HEIGHT = 22; // px; deeper than this and things fall behind the footer
@@ -153,13 +154,9 @@ export default function SeasonSky() {
       clippings = [];
     };
     const grassAverage = () => (grass.length ? grass.reduce((a, b) => a + b, 0) / grass.length : 0);
-    let edge = Infinity; // where things land: the footer's top (zen: the ground's), in viewport px
-    const zen = () => root.hasAttribute("data-zen");
-    // Zen ignores "off": the particles are the point of it
-    const weatherNow = (): Weather => (zen() && weather() === "off" ? "normal" : weather());
-    // The pointer's trail and the gust it makes, in zen
-    let trail: { x: number; y: number; age: number }[] = [];
-    const gust = { x: 0, y: 0, vx: 0, vy: 0 };
+    let edge = Infinity; // where things land: the footer's top (or a [data-ground]'s), in viewport px
+    // A plug-in can keep the particles on even when the visitor set them off
+    const weatherNow = (): Weather => (skySettings().alwaysOn && weather() === "off" ? "normal" : weather());
 
     // Colours come from each kind's own theme, so a season's particles keep
     // theirs while the page blends into the next
@@ -189,7 +186,7 @@ export default function SeasonSky() {
         kind: k,
         x: Math.random() * w,
         y: anywhere || k === "fireflies" ? Math.random() * h : -20,
-        size: (k === "snow" ? 4 + Math.random() * 4 : k === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6) * (zen() ? 1.25 : 1),
+        size: (k === "snow" ? 4 + Math.random() * 4 : k === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6) * skySettings().size,
         speed: k === "snow" ? 15 + Math.random() * 25 : k === "fireflies" ? 8 + Math.random() * 10 : 20 + Math.random() * 25,
         sway: k === "snow" ? 10 : 30 + Math.random() * 30,
         phase: Math.random() * Math.PI * 2,
@@ -416,16 +413,7 @@ export default function SeasonSky() {
       }
     };
     const stirAt = (x: number, y: number) => {
-      if (!zen()) return;
-      if (trail.length) {
-        const lastPoint = trail[trail.length - 1];
-        gust.vx = (x - lastPoint.x) * 14;
-        gust.vy = (y - lastPoint.y) * 14;
-      }
-      gust.x = x;
-      gust.y = y;
-      trail.push({ x, y, age: 0 });
-      if (trail.length > 40) trail.shift();
+      for (const plugin of skyPlugins()) plugin.pointer?.(x, y);
     };
     const onPointer = (e: PointerEvent) => {
       stirAt(e.clientX, e.clientY);
@@ -436,7 +424,7 @@ export default function SeasonSky() {
     const onTouch = (e: TouchEvent) => {
       const t = e.touches[0];
       // Sweeping with a finger shouldn't scroll the page
-      if (((tool && nearPile(t.clientY)) || zen()) && e.cancelable) e.preventDefault();
+      if (((tool && nearPile(t.clientY)) || skySettings().holdTouch) && e.cancelable) e.preventDefault();
       stirAt(t.clientX, t.clientY);
       kick(t.clientX, t.clientY);
     };
@@ -783,7 +771,7 @@ export default function SeasonSky() {
     // The buttons sit on the footer's edge, at the right, right to left:
     // the season's tool, the blower, the mower (whichever are on offer)
     const placeButton = () => {
-      const visible = edge < h - 20 && kind !== null && !zen();
+      const visible = edge < h - 20 && kind !== null;
       const pileReady = resting() >= (kind === "fireflies" ? 4 : TOOL_FROM) && featureOn("eggs");
       const lawnReady = grassy() && grass.length > 0 && grassAverage() >= GRASS_LONG && featureOn("eggs");
       const shown: HTMLElement[] = [];
@@ -822,6 +810,7 @@ export default function SeasonSky() {
       edge = ground ? ground.getBoundingClientRect().top : Infinity;
 
       const coming = arriving();
+      const plugins = skyPlugins();
       for (const p of particles) {
         if (p.kind === "fireflies") {
           p.x += Math.cos(t * 0.3 + p.phase) * p.speed * speed * dt;
@@ -835,15 +824,7 @@ export default function SeasonSky() {
           p.y += p.speed * speed * dt;
           p.x += Math.cos(t * 0.8 + p.phase) * p.sway * speed * dt;
         }
-        // Zen: the pointer's gust pushes whatever it passes
-        const gx = p.x - gust.x;
-        const gy = p.y - gust.y;
-        const near = gx * gx + gy * gy;
-        if (near < 120 * 120) {
-          const f = 1 - Math.sqrt(near) / 120;
-          p.x += gust.vx * f * dt;
-          p.y += gust.vy * f * 0.6 * dt;
-        }
+        for (const plugin of plugins) plugin.push?.(p, dt);
         // Out of season, things fade rather than linger: fireflies (they never
         // fall off the page) as soon as the next season blends in, anything
         // older than the season just ending once it's gone
@@ -871,28 +852,16 @@ export default function SeasonSky() {
           if (y > -20 && y < h + 20) shape(piece.x, y, piece, t, !piece.flying, piece.life ?? 1);
         }
       }
-      // Zen: the pointer's trail, fading behind it
-      if (trail.length) {
-        for (const pt of trail) pt.age += dt;
-        trail = trail.filter((pt) => pt.age < 0.8);
-        const fg = (kind ? paletteOf(kind) : { fg: "#888888" }).fg;
-        ctx.strokeStyle = fg;
-        ctx.lineCap = "round";
-        for (let i = 1; i < trail.length; i++) {
-          const a = trail[i - 1];
-          const b = trail[i];
-          const life = 1 - b.age / 0.8;
-          ctx.globalAlpha = 0.28 * life;
-          ctx.lineWidth = 1 + 3 * life;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
+      // Plug-ins draw over the particles and pile (zen's trail, say)
+      if (plugins.length) {
+        const frameInfo = { ctx, w, h, edge, t, dt, fg: (kind ? paletteOf(kind) : { fg: "#888888" }).fg };
+        for (const plugin of plugins) {
+          ctx.save();
+          plugin.draw?.(frameInfo);
+          ctx.restore();
         }
         ctx.globalAlpha = 1;
       }
-      gust.vx *= Math.pow(0.02, dt);
-      gust.vy *= Math.pow(0.02, dt);
 
       if (tool && pointer && nearPile(pointer.y)) {
         if (tool === "blower") {
@@ -910,13 +879,13 @@ export default function SeasonSky() {
     };
 
     const target = (wx: keyof typeof WEATHER, k = kind) =>
-      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (zen() ? ZEN_DENSITY : 1) * (w * h)) / (1440 * 900))) : 0;
+      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * skySettings().density * (w * h)) / (1440 * 900))) : 0;
 
     // A new speed setting: adjust in place, keeping what's on screen and the pile
     const onWeather = () => {
       const wx = weatherNow();
       if (wx === "off" || !frame) return start();
-      speed = WEATHER[wx].speed * (zen() ? 0.7 : 1);
+      speed = WEATHER[wx].speed * skySettings().speed;
       const n = target(wx);
       if (n < particles.length) particles = particles.slice(0, n);
       while (kind && particles.length < n) particles.push(spawn(false, kind));
@@ -958,7 +927,7 @@ export default function SeasonSky() {
       const wx = weatherNow();
       if (!kind || reduce || document.hidden || wx === "off") return;
       resize();
-      speed = WEATHER[wx].speed * (zen() ? 0.7 : 1);
+      speed = WEATHER[wx].speed * skySettings().speed;
       particles = Array.from({ length: target(wx) }, () => spawn(true, kind!));
       pile = [];
       heights = new Array(Math.ceil(w / COLUMN) + 1).fill(0);
@@ -972,7 +941,9 @@ export default function SeasonSky() {
     const observer = new MutationObserver(onPalette);
     observer.observe(root, { attributes: true, attributeFilter: ["data-palette"] });
     const modeObserver = new MutationObserver(start);
-    modeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme", "data-zen"] });
+    modeObserver.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    // Plug-ins coming or going change how many, how big and how fast
+    addEventListener("sky-plugins", start);
     const weatherObserver = new MutationObserver(onWeather);
     weatherObserver.observe(root, { attributes: true, attributeFilter: ["data-weather"] });
     document.addEventListener("visibilitychange", start);
@@ -996,6 +967,7 @@ export default function SeasonSky() {
       stop();
       observer.disconnect();
       modeObserver.disconnect();
+      removeEventListener("sky-plugins", start);
       weatherObserver.disconnect();
       document.removeEventListener("visibilitychange", start);
       removeEventListener("resize", onResize);

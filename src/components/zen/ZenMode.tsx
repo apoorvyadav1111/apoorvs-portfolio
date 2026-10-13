@@ -4,14 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES, currentSeason } from "@/themes";
 import { canTimelapse, startTimelapse, stopTimelapse } from "@/lib/timelapse";
+import { addToSky } from "@/lib/sky";
 import ZenScene from "./ZenScene";
+import { wind } from "./wind";
 
 // Zen mode (/zen): the words go, the seasons stay. Hides the header, footer and
 // everything else (see [data-zen] in globals.css), lays a landscape under the
 // season's particles, and lets a slow timelapse turn the year, a minute a
-// season. On a regular theme it borrows this season's, without saving it. The
-// pointer leaves a soft trail that stirs things like wind (SeasonSky.tsx).
+// season. On a regular theme it borrows this season's, without saving it.
 // Esc, or the faint "leave" that appears when you move, goes back.
+//
+// Everything zen lives in this folder and only loads on /zen. It adds to the
+// shared seasonal sky through plug-ins (src/lib/sky.ts): wind.ts is one.
+// Game pieces (a watering can, trees…) belong here as more plug-ins, or as
+// layers in ZenScene.tsx; the clean-up tools come from the sky itself.
 
 const SEASON_LENGTH = 60;
 const HINT_MS = 2500;
@@ -25,6 +31,7 @@ export default function ZenMode() {
     const r = document.documentElement;
     const before = r.dataset.palette;
     r.dataset.zen = "";
+    const removeWind = addToSky(wind());
     if (!canTimelapse()) r.dataset.palette = THEMES.find((t) => t.season === currentSeason())!.id;
     startTimelapse({ every: SEASON_LENGTH, loop: true });
 
@@ -50,6 +57,7 @@ export default function ZenMode() {
       removeEventListener("pointermove", stir);
       removeEventListener("pointerdown", stir);
       removeEventListener("keydown", onKey);
+      removeWind();
       stopTimelapse(false);
       delete r.dataset.zen;
       r.removeAttribute("data-zen-still");
