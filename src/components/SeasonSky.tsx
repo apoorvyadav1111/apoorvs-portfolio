@@ -22,7 +22,7 @@ interface Particle {
 }
 
 // Particles per 1440×900 of screen
-const DENSITY: Record<Kind, number> = { leaves: 12, snow: 45, petals: 14, fireflies: 16 };
+const DENSITY: Record<Kind, number> = { leaves: 12, snow: 30, petals: 14, fireflies: 16 };
 
 export default function SeasonSky() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -52,7 +52,7 @@ export default function SeasonSky() {
     const spawn = (anywhere: boolean, palette: string[]): Particle => ({
       x: Math.random() * w,
       y: anywhere || kind === "fireflies" ? Math.random() * h : -20,
-      size: kind === "snow" ? 1 + Math.random() * 2 : kind === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6,
+      size: kind === "snow" ? 4 + Math.random() * 4 : kind === "fireflies" ? 1.5 + Math.random() * 1.5 : 7 + Math.random() * 6,
       speed: kind === "snow" ? 15 + Math.random() * 25 : kind === "fireflies" ? 8 + Math.random() * 10 : 20 + Math.random() * 25,
       sway: kind === "snow" ? 10 : 30 + Math.random() * 30,
       phase: Math.random() * Math.PI * 2,
@@ -89,10 +89,30 @@ export default function SeasonSky() {
 
         ctx.fillStyle = p.color;
         if (kind === "snow") {
-          ctx.globalAlpha = 0.5;
+          // A six-armed flake, slowly turning; bigger ones get little branches
+          ctx.globalAlpha = 0.6;
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 1;
+          ctx.lineCap = "round";
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(t * p.spin * 0.3 + p.phase);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fill();
+          for (let arm = 0; arm < 6; arm++) {
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -p.size);
+            if (p.size > 4.5) {
+              const b = p.size * 0.55;
+              const l = p.size * 0.3;
+              ctx.moveTo(0, -b);
+              ctx.lineTo(-l, -b - l);
+              ctx.moveTo(0, -b);
+              ctx.lineTo(l, -b - l);
+            }
+            ctx.rotate(Math.PI / 3);
+          }
+          ctx.stroke();
+          ctx.restore();
         } else if (kind === "fireflies") {
           const pulse = 0.5 + 0.5 * Math.sin(t * 1.6 + p.phase * 3);
           ctx.globalAlpha = 0.15 + 0.6 * pulse;
