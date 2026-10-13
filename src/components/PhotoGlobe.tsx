@@ -23,6 +23,7 @@ const MAX_ZOOM = 18;
 const THUMBS_FROM = 2.4; // zoom at which photo points become thumbnails
 const START = { lat: 37, lng: -112, zoom: 1 }; // the American West, where most photos are
 const SPIN = 4 * DEG; // idle auto-spin, per second
+const FLICK = 0.1; // radians per pointer move: faster than this is a flick
 const SHADES = 9; // brightness levels, light falls off toward the globe's edge
 const CHARS = ".:-=+*#%@"; // one glyph per shade, for character mode
 const CHAR_PX = 10; // character mode's text size; the grid cell is a little larger
@@ -119,6 +120,7 @@ export default function PhotoGlobe({
     vpitch: 0,
     lastInput: 0,
     dragged: false,
+    whee: false, // a hard flick: spins on with little friction (easter egg)
     clusters: [] as Cluster[],
     radius: 1,
     baseRadius: 1,
@@ -233,8 +235,9 @@ export default function PhotoGlobe({
       } else if (!reduceMotion) {
         s.yaw += s.vyaw;
         s.pitch = clamp(s.pitch + s.vpitch, -85 * DEG, 85 * DEG);
-        s.vyaw *= Math.pow(0.04, dt);
+        s.vyaw *= Math.pow(s.whee ? 0.55 : 0.04, dt);
         s.vpitch *= Math.pow(0.04, dt);
+        if (s.whee && Math.abs(s.vyaw) < 0.004) s.whee = false;
         if (now - s.lastInput > 3000 && s.zoom < 1.6) s.yaw += SPIN * dt;
       }
       s.radius = s.baseRadius * s.zoom;
@@ -497,6 +500,7 @@ export default function PhotoGlobe({
     s.target = null;
     s.dragged = false;
     s.vyaw = s.vpitch = 0;
+    s.whee = false;
     s.lastInput = -1; // stamped by the animation loop
     const pts = [...pointers.current.values()];
     gesture.current =
@@ -540,6 +544,12 @@ export default function PhotoGlobe({
       return;
     }
     gesture.current = null;
+    // Flicked hard? Let it spin for a while
+    if (s.dragged && Math.abs(s.vyaw) > FLICK) {
+      s.whee = true;
+      s.vyaw = clamp(s.vyaw * 1.5, -0.15, 0.15);
+      s.vpitch = 0;
+    }
     if (s.dragged || s.zoom >= THUMBS_FROM) return;
     // A tap on a glowing point zooms toward that place
     const r = wrap.current!.getBoundingClientRect();
