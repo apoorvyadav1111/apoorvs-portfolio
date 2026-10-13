@@ -30,7 +30,8 @@ import { featureOn } from "@/lib/features";
 // During a timelapse (src/lib/timelapse.ts) the seasons hand over instead of
 // resetting: what's falling finishes its fall while new arrivals are the next
 // season's, snow on the footer melts, fireflies fade, leaves stay to be buried
-// by the first snow, and the grass withers or sprouts.
+// by the first snow and rot away in spring (petals likewise, a season later),
+// and the grass withers or sprouts.
 
 type Kind = NonNullable<(typeof THEMES)[number]["particles"]>;
 
@@ -66,10 +67,17 @@ interface Piece {
   flying: boolean;
   gone?: boolean; // swept away by the tool: never settles again
   life?: number; // swept pieces fade out over a second; melting ones slower
+  making?: boolean; // fading to make room on a full pile
 }
 
-// Particles per 1440×900 of screen
-const DENSITY: Record<Kind, number> = { leaves: 12, snow: 30, petals: 14, fireflies: 16 };
+// Each kind's season, in the order the year goes
+const ORDER: Kind[] = ["petals", "fireflies", "leaves", "snow"];
+
+// How many of each fall at once, per 1440×900 of screen (it scales with the
+// window). The visitor's speed setting multiplies this (WEATHER below), as
+// does zen mode (ZEN_DENSITY). Lower these for a quieter page.
+const DENSITY: Record<Kind, number> = { leaves: 8, snow: 18, petals: 9, fireflies: 12 };
+const ZEN_DENSITY = 1.25;
 const COLUMN = 8; // px; the pile's height is tracked per column
 const MAX_PIECES = 110;
 const MAX_HEIGHT = 22; // px; deeper than this and things fall behind the footer
@@ -283,17 +291,24 @@ export default function SeasonSky() {
 
     const column = (x: number) => Math.max(0, Math.min(heights.length - 1, Math.floor(x / COLUMN)));
 
-    // Adds something to the pile where it landed; false if there's no room
+    // Adds something to the pile where it landed. A full pile turns over
+    // rather than letting things fall through: the oldest piece fades to make
+    // room, and a deep spot stops growing taller.
     const settle = (x: number, from: Particle | Piece) => {
       const fireflies = from.kind === "fireflies";
-      if (fireflies ? pile.filter((p) => p.kind === "fireflies").length >= MAX_FIREFLIES : pile.length >= MAX_PIECES) return false;
+      const same = fireflies ? pile.filter((p) => p.kind === "fireflies") : pile;
+      const room = same.filter((p) => !p.flying && !p.making).length;
+      if (room >= (fireflies ? MAX_FIREFLIES : MAX_PIECES)) {
+        const oldest = same.find((p) => !p.flying && !p.making);
+        if (oldest) oldest.making = true;
+      }
       const c = column(x);
-      if (heights[c] >= MAX_HEIGHT) return false;
-      const thick = fireflies ? 0 : from.size * (from.kind === "snow" ? 0.3 : 0.35);
+      const full = heights[c] >= MAX_HEIGHT;
+      const thick = fireflies || full ? 0 : from.size * (from.kind === "snow" ? 0.3 : 0.35);
       pile.push({
         kind: from.kind,
         x,
-        y: heights[c] + thick * 0.5,
+        y: Math.min(heights[c], MAX_HEIGHT) + thick * 0.5,
         vx: 0,
         vy: 0,
         rot: fireflies || from.kind === "snow" ? 0 : lying(),
@@ -323,12 +338,21 @@ export default function SeasonSky() {
     // Kicked pieces fly up, fall back and settle again
     const updatePile = (dt: number) => {
       pile = pile.filter((piece) => {
+        if (!piece.flying && piece.making) {
+          piece.life = (piece.life ?? 1) - dt * 0.8;
+          if (piece.life > 0) return true;
+          const c = column(piece.x);
+          heights[c] = Math.max(0, heights[c] - piece.thick);
+          return false;
+        }
         if (!piece.flying) {
-          // Out of season (a timelapse moved on): snow melts, fireflies leave;
-          // leaves and petals stay, to be buried or swept
-          const melts = kind === null || ((piece.kind === "snow" || piece.kind === "fireflies") && piece.kind !== kind);
-          if (!melts) return true;
-          piece.life = (piece.life ?? 1) - dt * 0.35 * speed;
+          // Out of season (a timelapse moved on): snow melts and fireflies
+          // leave as soon as theirs ends; leaves and petals linger one more
+          // season (autumn leaves under the winter snow) and then rot away
+          const age = kind ? (ORDER.indexOf(kind) - ORDER.indexOf(piece.kind) + 4) % 4 : 4;
+          const lingers = piece.kind === "leaves" || piece.kind === "petals";
+          if (age < (lingers ? 2 : 1)) return true;
+          piece.life = (piece.life ?? 1) - dt * (lingers ? 0.1 : 0.35) * speed;
           if (piece.life > 0) return true;
           const c = column(piece.x);
           heights[c] = Math.max(0, heights[c] - piece.thick);
@@ -886,7 +910,7 @@ export default function SeasonSky() {
     };
 
     const target = (wx: keyof typeof WEATHER, k = kind) =>
-      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (zen() ? 1.6 : 1) * (w * h)) / (1440 * 900))) : 0;
+      k ? Math.max(4, Math.round((DENSITY[k] * WEATHER[wx].density * (zen() ? ZEN_DENSITY : 1) * (w * h)) / (1440 * 900))) : 0;
 
     // A new speed setting: adjust in place, keeping what's on screen and the pile
     const onWeather = () => {

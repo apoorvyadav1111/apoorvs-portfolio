@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import type { Season } from "@/themes";
 
-// The landscape behind zen mode (/zen): sky glow, a sun or moon, stars at
-// night, soft hills along the bottom, and a few things only one season has:
+// The landscape behind zen mode (/zen): sky glow, a sun by day or tonight's
+// real moon phase by night, drifting clouds, stars, soft hills along the bottom, and a few things only one season has:
 // spring showers and butterflies, summer's drifting dandelion seeds, autumn's
 // birds heading south, winter's aurora. Colours come from the theme's CSS
 // variables every frame, so they follow a timelapse's blend; each season's
@@ -32,6 +32,22 @@ interface Flock {
 }
 
 const SEASONS: Season[] = ["spring", "summer", "autumn", "winter"];
+
+// Where the moon is in its cycle right now, 0 new → 0.5 full → 1 new again,
+// counted from a known new moon (6 Jan 2000, 18:14 UTC)
+function moonPhase(now = Date.now()) {
+  const SYNODIC = 29.530588853 * 86400000;
+  const p = (now - Date.UTC(2000, 0, 6, 18, 14)) / SYNODIC;
+  return p - Math.floor(p);
+}
+
+interface Cloud {
+  x: number; // 0–1, drifting right
+  y: number;
+  scale: number;
+  speed: number;
+  puffs: { dx: number; dy: number; r: number }[];
+}
 
 type RGB = [number, number, number];
 
@@ -74,6 +90,19 @@ export default function ZenScene() {
     const butterflies: Butterfly[] = Array.from({ length: 3 }, (_, i) => ({ x: Math.random(), y: 0.45 + Math.random() * 0.25, phase: i * 2, dir: Math.random() < 0.5 ? -1 : 1 }));
     const seeds: Seed[] = Array.from({ length: 22 }, () => ({ x: Math.random(), y: Math.random(), drift: Math.random() * 6, size: 2 + Math.random() * 2 }));
     let flock: Flock | null = null;
+    const phase = moonPhase();
+    // A handful of clouds, each a cluster of overlapping puffs
+    const clouds: Cloud[] = Array.from({ length: 7 }, (_, i) => ({
+      x: i / 7 + Math.random() * 0.1,
+      y: 0.08 + Math.random() * 0.32,
+      scale: 0.7 + Math.random() * 0.7,
+      speed: 0.004 + Math.random() * 0.006,
+      puffs: Array.from({ length: 5 + Math.floor(Math.random() * 3) }, (_, k) => ({
+        dx: (k - 3) * 22 + Math.random() * 10,
+        dy: -Math.sin((k / 6) * Math.PI) * 16 + Math.random() * 6,
+        r: 18 + Math.sin((k / 6) * Math.PI) * 14 + Math.random() * 6,
+      })),
+    }));
     let nextFlock = 4;
 
     const resize = () => {
@@ -103,7 +132,7 @@ export default function ZenScene() {
       const css = getComputedStyle(root);
       const v = (name: string) => color(css.getPropertyValue(name));
       const [bgC, surfaceC, fgC, lineC, accentC, sunC] = ["--bg", "--surface", "--fg", "--line", "--accent", "--sun"].map(v);
-      const [bg, surface, fg, accent, sun] = [bgC, surfaceC, fgC, accentC, sunC].map((c) => rgba(c));
+      const [surface, fg, accent, sun] = [surfaceC, fgC, accentC, sunC].map((c) => rgba(c));
       const dark = root.dataset.theme !== "light";
       const on = seasonOn();
       for (const s of SEASONS) presence[s] += ((s === on ? 1 : 0) - presence[s]) * Math.min(1, dt * 0.6);
@@ -152,21 +181,27 @@ export default function ZenScene() {
         ctx.globalAlpha = 1;
       }
 
-      // Sun by day, a crescent moon by night
+      // Sun by day; by night the moon, in tonight's actual phase
       ctx.save();
       if (dark) {
+        const r = 22;
+        // The unlit disc, faint (earthshine)
         ctx.fillStyle = fg;
-        ctx.globalAlpha = 0.85;
-        ctx.shadowColor = fg;
-        ctx.shadowBlur = 24;
+        ctx.globalAlpha = 0.1;
         ctx.beginPath();
-        ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = bg;
+        // The lit part: one limb plus the terminator, an ellipse whose width
+        // follows the phase. Waxing is lit on the right, waning on the left.
+        ctx.translate(cx, cy);
+        if (phase > 0.5) ctx.scale(-1, 1);
+        const k = Math.cos(phase * 2 * Math.PI); // 1 new, 0 half, -1 full
+        ctx.globalAlpha = 0.9;
+        ctx.shadowColor = fg;
+        ctx.shadowBlur = 24 * (1 - k) * 0.5 + 6;
         ctx.beginPath();
-        ctx.arc(cx + 9, cy - 6, 20, 0, Math.PI * 2);
+        ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2);
+        ctx.ellipse(0, 0, Math.abs(k) * r, r, 0, Math.PI / 2, -Math.PI / 2, k > 0);
         ctx.fill();
       } else {
         ctx.fillStyle = sun;
@@ -178,6 +213,34 @@ export default function ZenScene() {
         ctx.fill();
       }
       ctx.restore();
+
+      // Clouds drift across, more of them in spring and winter, few in summer;
+      // white by day, dim grey by night (passing in front of the moon)
+      const cloudy = Math.max(1, Math.round(3 + 3 * presence.spring + 2 * presence.winter + presence.autumn - 2 * presence.summer));
+      const showerDark = presence.spring * Math.max(0, Math.sin(t * 0.12)) ** 2;
+      for (let i = 0; i < clouds.length; i++) {
+        const c = clouds[i];
+        if (!still) {
+          c.x += c.speed * dt;
+          if (c.x > 1.25) {
+            c.x = -0.25;
+            c.y = 0.08 + Math.random() * 0.32;
+          }
+        }
+        const want = i < cloudy ? 1 : 0;
+        const a = (dark ? 0.16 : 0.55) * want;
+        if (a === 0) continue;
+        const tint = dark ? mix(fgC, bgC, 0.35) : mix([255, 255, 255], mix(fgC, bgC, 0.15), 1 - showerDark * 0.5);
+        ctx.fillStyle = rgba(tint, a);
+        ctx.beginPath();
+        for (const puff of c.puffs) {
+          const px = c.x * w + puff.dx * c.scale;
+          const py = c.y * h + puff.dy * c.scale;
+          ctx.moveTo(px + puff.r * c.scale, py);
+          ctx.arc(px, py, puff.r * c.scale, 0, Math.PI * 2);
+        }
+        ctx.fill();
+      }
 
       // Autumn: now and then a flock heads south across the sky
       if (!still) {
