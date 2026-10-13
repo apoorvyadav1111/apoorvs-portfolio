@@ -31,9 +31,15 @@ export interface Theme {
   grain: number; // paper-texture opacity, 0 to disable
   photoFilter?: string; // CSS filter for photos, e.g. "grayscale(1)"; hover shows the original
   motion: Motion;
+  // Seasonal themes only appear in the Appearance menu during their season
+  season?: Season;
+  // Drifting particles shown while the theme is on (seasonal themes)
+  particles?: "leaves" | "snow" | "petals" | "fireflies";
   light: Palette;
   dark: Palette;
 }
+
+export type Season = "spring" | "summer" | "autumn" | "winter";
 
 // How things move in this theme. Visitors who ask for reduced motion get none of it.
 export interface Motion {
@@ -41,7 +47,9 @@ export interface Motion {
   //   rise: fade up · misregister: slides into register like a riso print
   //   wipe: rises out of a mask · develop: fades in from a blur, like a print developing
   //   ink: inked in left to right, like a press roller
-  reveal: "rise" | "misregister" | "wipe" | "develop" | "ink";
+  //   fall: drifts down and settles, like a leaf · frost: thaws from a blur
+  //   bloom: opens up from small
+  reveal: "rise" | "misregister" | "wipe" | "develop" | "ink" | "fall" | "frost" | "bloom";
   duration: number; // ms
   ease: string; // CSS timing function
   stagger: number; // ms between elements entering together

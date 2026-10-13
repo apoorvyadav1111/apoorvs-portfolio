@@ -2,7 +2,8 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
-import { DEFAULT_MODE, DEFAULT_THEME, FONT_CHOICES, THEMES } from "@/themes";
+import { DEFAULT_MODE, DEFAULT_THEME, FONT_CHOICES, THEMES, availableThemes, currentSeason } from "@/themes";
+import type { Season, Theme } from "@/themes";
 
 // Visitor-facing appearance controls: theme, font and light/dark mode.
 // Choices live as attributes on <html> (read by the CSS from themeCss()) and
@@ -151,7 +152,7 @@ export default function AppearanceMenu() {
     if (rolling) return;
     const others = (list: string[], current: string) => list.filter((id) => id !== current);
     const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
-    const palette = pick(others(THEMES.map((t) => t.id), appearance.palette));
+    const palette = pick(others(availableThemes(currentSeason()).map((t) => t.id), appearance.palette));
     const font = pick(others(FONT_CHOICES.map((f) => f.id), appearance.font));
     const origin = pointFrom(e);
     const apply = () =>
@@ -174,6 +175,9 @@ export default function AppearanceMenu() {
     }, ROLL_MS);
   };
   const Die = DICE[face];
+  const themes = open ? availableThemes(currentSeason()) : [];
+  const regulars = themes.filter((t) => !t.season);
+  const seasonal = themes.find((t) => t.season);
 
   const reset = (e: React.MouseEvent) =>
     transition(() => {
@@ -229,41 +233,24 @@ export default function AppearanceMenu() {
           </div>
 
           <Section label="Theme">
-            <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="Theme">
-              {THEMES.map((t) => {
-                const p = t[appearance.resolved];
-                const active = appearance.palette === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    role="radio"
-                    aria-checked={active}
-                    onClick={(e) => transition(() => setPalette(t.id), pointFrom(e))}
-                    className="group text-left"
-                  >
-                    <span
-                      className={`flex h-16 flex-col justify-between overflow-hidden border p-2 transition-all group-hover:-translate-y-0.5 ${
-                        active ? "ring-2 ring-accent ring-offset-2 ring-offset-bg" : ""
-                      }`}
-                      style={{
-                        background: p.bg,
-                        borderColor: p.line,
-                        color: p.fg,
-                        borderRadius: t.radius,
-                      }}
-                    >
-                      <span
-                        className="text-xl leading-none"
-                        style={{ fontFamily: t.fonts.display, fontWeight: t.display.weight, letterSpacing: t.display.tracking }}
-                      >
-                        Aa
-                      </span>
-                      <span className="h-1.5 w-8" style={{ background: p.accent, borderRadius: t.pill }} />
+            <div role="radiogroup" aria-label="Theme">
+              <div className="grid grid-cols-5 gap-2">
+                {regulars.map((t) => (
+                  <ThemeOption key={t.id} theme={t} appearance={appearance}>
+                    <span className="mt-1.5 block truncate text-xs">{t.name}</span>
+                  </ThemeOption>
+                ))}
+              </div>
+              {seasonal && (
+                <ThemeOption theme={seasonal} appearance={appearance} wide>
+                  <span>
+                    <span className="block text-sm">{seasonal.name}</span>
+                    <span className="block font-mono text-[10px] uppercase tracking-wider text-muted">
+                      {seasonal.season} only · here until {SEASON_ENDS[seasonal.season!]}
                     </span>
-                    <span className={`mt-1.5 block truncate text-xs ${active ? "text-fg" : "text-muted"}`}>{t.name}</span>
-                  </button>
-                );
-              })}
+                  </span>
+                </ThemeOption>
+              )}
             </div>
           </Section>
 
@@ -332,6 +319,56 @@ export default function AppearanceMenu() {
         </div>
       )}
     </div>
+  );
+}
+
+const SEASON_ENDS: Record<Season, string> = {
+  spring: "the end of May",
+  summer: "the end of August",
+  autumn: "the end of November",
+  winter: "the end of February",
+};
+
+// A theme to pick, previewed in its own colors and type. `wide` lays the
+// preview beside the label instead of above it (used for the seasonal theme).
+function ThemeOption({
+  theme: t,
+  appearance,
+  wide = false,
+  children,
+}: {
+  theme: Theme;
+  appearance: Appearance;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  const p = t[appearance.resolved];
+  const active = appearance.palette === t.id;
+  return (
+    <button
+      role="radio"
+      aria-checked={active}
+      onClick={(e) => transition(() => setPalette(t.id), pointFrom(e))}
+      className={`group text-left ${wide ? "mt-2 flex w-full items-center gap-3" : ""} ${
+        active ? "text-fg" : "text-muted hover:text-fg"
+      }`}
+    >
+      <span
+        className={`flex h-16 shrink-0 flex-col justify-between overflow-hidden border p-2 transition-all group-hover:-translate-y-0.5 ${
+          wide ? "w-[calc((100%-2rem)/5)]" : ""
+        } ${active ? "ring-2 ring-accent ring-offset-2 ring-offset-bg" : ""}`}
+        style={{ background: p.bg, borderColor: p.line, color: p.fg, borderRadius: t.radius }}
+      >
+        <span
+          className="text-xl leading-none"
+          style={{ fontFamily: t.fonts.display, fontWeight: t.display.weight, letterSpacing: t.display.tracking }}
+        >
+          Aa
+        </span>
+        <span className="h-1.5 w-8" style={{ background: p.accent, borderRadius: t.pill }} />
+      </span>
+      {children}
+    </button>
   );
 }
 

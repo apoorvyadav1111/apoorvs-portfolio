@@ -4,22 +4,46 @@
 //   1. Create `src/themes/<id>.ts` exporting a `Theme` (copy trail.ts as a start).
 //   2. Declare any new fonts in `fonts.ts`.
 //   3. Add it to THEMES below.
+// A theme with a `season` is only offered during that season (see currentSeason).
 // To change the site's look, change DEFAULT_THEME. Visitors can also pick a
 // theme, a font and light/dark mode from the Appearance menu in the header;
 // their choices are remembered in localStorage.
-import type { Motion, Palette, Theme } from "./types";
+import type { Motion, Palette, Season, Theme } from "./types";
 import { trail } from "./trail";
 import { riso } from "./riso";
 import { swiss } from "./swiss";
 import { graphite } from "./graphite";
 import { gazette } from "./gazette";
+import { harvest } from "./harvest";
+import { frost } from "./frost";
+import { bloom } from "./bloom";
+import { solstice } from "./solstice";
 
-export const THEMES: Theme[] = [trail, riso, swiss, graphite, gazette];
+export const THEMES: Theme[] = [trail, riso, swiss, graphite, gazette, harvest, frost, bloom, solstice];
 export const DEFAULT_THEME = "trail";
 // What first-time visitors see: "dark", "light", or "system" (follow the device)
 export const DEFAULT_MODE: "light" | "dark" | "system" = "dark";
 
-export type { Theme, Palette, Motion };
+export type { Theme, Palette, Motion, Season };
+
+// Seasons by month, northern hemisphere (where the site's author lives).
+// Index 0 is January.
+const SEASON_BY_MONTH: Season[] = [
+  "winter", "winter", "spring", "spring", "spring", "summer",
+  "summer", "summer", "autumn", "autumn", "autumn", "winter",
+];
+
+// The season right now. `?season=winter` in the URL previews another one.
+export function currentSeason(): Season {
+  const preview = new URLSearchParams(location.search).get("season");
+  if (SEASON_BY_MONTH.includes(preview as Season)) return preview as Season;
+  return SEASON_BY_MONTH[new Date().getMonth()];
+}
+
+// Themes on offer: the regulars plus this season's
+export function availableThemes(season: Season) {
+  return THEMES.filter((t) => !t.season || t.season === season);
+}
 
 // Typefaces visitors can apply on top of any theme. "theme" keeps the theme's own.
 export interface FontChoice {
@@ -88,8 +112,11 @@ export function themeCss() {
 // Runs before first paint: restores the visitor's theme, font and light/dark
 // mode, and turns on motion (see Motion.tsx) unless the visitor prefers less.
 // A saved mode is "light", "dark" or "system"; nothing saved means DEFAULT_MODE.
-export const themeInitScript = `(function(){var d=document.documentElement,p,f,m;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme")}catch(e){}if(${JSON.stringify(
-  THEMES.map((t) => t.id),
-)}.indexOf(p)>-1)d.dataset.palette=p;if(${JSON.stringify(
+// A saved seasonal theme only applies during its season.
+export const themeInitScript = `(function(){var d=document.documentElement,p,f,m;try{p=localStorage.getItem("palette");f=localStorage.getItem("font");m=localStorage.getItem("theme")}catch(e){}var S=${JSON.stringify(
+  SEASON_BY_MONTH,
+)},q=new URLSearchParams(location.search).get("season"),s=S.indexOf(q)>-1?q:S[new Date().getMonth()],T=${JSON.stringify(
+  Object.fromEntries(THEMES.map((t) => [t.id, t.season ?? ""])),
+)};if(p in T&&(!T[p]||T[p]===s))d.dataset.palette=p;if(${JSON.stringify(
   FONT_CHOICES.filter((c) => c.display).map((c) => c.id),
 )}.indexOf(f)>-1)d.dataset.font=f;if(m!=="light"&&m!=="dark"&&m!=="system")m=${JSON.stringify(DEFAULT_MODE)};if(m==="system")m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.dataset.theme=m;if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&"IntersectionObserver" in window){d.dataset.motion="";setTimeout(function(){if(d.dataset.motionReady===undefined)delete d.dataset.motion},4000)}})()`;
