@@ -1,5 +1,16 @@
 [
   {
+    "title": "Building effective agents",
+    "url": "https://www.anthropic.com/engineering/building-effective-agents",
+    "author": "Erik Schluntz, Barry Zhang",
+    "date": "2026-10-13",
+    "summary": "Anthropic separates agentic systems into workflows, where LLMs and tools follow predefined code paths, and agents, where the LLM directs its own process and tool use in a loop, and argues for starting with the simplest option and adding complexity only when it pays off. It walks through the common workflow patterns (prompt chaining, routing, parallelization, orchestrator-workers and evaluator-optimizer) and when each fits. It closes on keeping agents simple and transparent, and on designing their tools as carefully as their prompts.",
+    "tags": [
+      "ai",
+      "system-design"
+    ]
+  },
+  {
     "title": "Redis new data structure: the HyperLogLog",
     "url": "https://antirez.com/news/75",
     "author": "antirez",
