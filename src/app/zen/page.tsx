@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Zen() {
-  return <ZenMode />;
+  return <ZenMode other={{ href: "/zen/fetch", label: "play fetch" }} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { THEMES, currentSeason } from "@/themes";
 import { canTimelapse, startTimelapse, stopTimelapse } from "@/lib/timelapse";
@@ -18,11 +19,23 @@ import { wind } from "./wind";
 // shared seasonal sky through plug-ins (src/lib/sky.ts): wind.ts is one.
 // Game pieces (a watering can, trees…) belong here as more plug-ins, or as
 // layers in ZenScene.tsx; the clean-up tools come from the sky itself.
+// Whole games get their own page that wraps itself in <ZenMode> (fetch/ is
+// one), so each loads only where it's played.
 
 const SEASON_LENGTH = 60;
 const HINT_MS = 2500;
 
-export default function ZenMode() {
+export default function ZenMode({
+  title = "Zen mode: the seasons, with nothing else on the page.",
+  withWind = true,
+  other,
+  children,
+}: {
+  title?: string; // for screen readers
+  withWind?: boolean; // the pointer's trail and gust; off for games that use the pointer
+  other?: { href: string; label: string }; // the other zen page, offered beside "leave"
+  children?: React.ReactNode; // a game, drawn over the landscape
+}) {
   const router = useRouter();
   const [awake, setAwake] = useState(true);
   const timer = useRef(0);
@@ -31,7 +44,7 @@ export default function ZenMode() {
     const r = document.documentElement;
     const before = r.dataset.palette;
     r.dataset.zen = "";
-    const removeWind = addToSky(wind());
+    const removeWind = withWind ? addToSky(wind()) : () => {};
     if (!canTimelapse()) r.dataset.palette = THEMES.find((t) => t.season === currentSeason())!.id;
     startTimelapse({ every: SEASON_LENGTH, loop: true });
 
@@ -63,20 +76,30 @@ export default function ZenMode() {
       r.removeAttribute("data-zen-still");
       if (before && r.dataset.palette !== before) r.dataset.palette = before;
     };
-  }, [router]);
+  }, [router, withWind]);
 
   return (
     <div className="zen">
-      <h1 className="sr-only">Zen mode: the seasons, with nothing else on the page. Press Escape to leave.</h1>
+      <h1 className="sr-only">{title} Press Escape to leave.</h1>
       <ZenScene />
-      <button
-        onClick={() => (history.length > 1 ? router.back() : router.push("/"))}
-        className={`fixed left-4 top-4 z-50 rounded-pill px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-muted transition-opacity duration-700 hover:text-fg sm:left-6 sm:top-6 ${
-          awake ? "opacity-70" : "opacity-0"
+      {children}
+      <div
+        className={`fixed left-4 top-4 z-50 flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted transition-opacity duration-700 sm:left-6 sm:top-6 ${
+          awake ? "opacity-70" : "pointer-events-none opacity-0"
         }`}
       >
-        ← leave · esc
-      </button>
+        <button
+          onClick={() => (history.length > 1 ? router.back() : router.push("/"))}
+          className="rounded-pill px-3 py-1.5 transition-colors hover:text-fg"
+        >
+          ← leave · esc
+        </button>
+        {other && (
+          <Link href={other.href} replace className="rounded-pill px-3 py-1.5 transition-colors hover:text-fg">
+            {other.label} →
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import type { Season } from "@/themes";
+import { color, mix, rgba } from "./colors";
 
 // The landscape behind zen mode (/zen): sky glow, a sun by day or a moon by
 // night (slowly waxing and waning), drifting clouds, stars, soft hills along the bottom, and a few things only one season has:
@@ -44,24 +45,7 @@ interface Cloud {
   puffs: { dx: number; dy: number; r: number }[];
 }
 
-type RGB = [number, number, number];
 
-// Theme colours are hex, or color-mix(in oklab, #a N%, #b) while a timelapse
-// blends; canvas can't be trusted with the latter, so mix them here
-function hex(value: string): RGB {
-  let h = value.replace("#", "");
-  if (h.length === 3) h = [...h].map((c) => c + c).join("");
-  const n = parseInt(h.slice(0, 6), 16);
-  return Number.isNaN(n) ? [128, 128, 128] : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-function color(value: string): RGB {
-  const m = value.match(/color-mix\(in oklab,\s*(#[0-9a-f]{3,8})\s+([\d.]+)%,\s*(#[0-9a-f]{3,8})\)/i);
-  if (!m) return hex(value.trim());
-  const [a, b, p] = [hex(m[1]), hex(m[3]), Number(m[2]) / 100];
-  return a.map((v, i) => v * p + b[i] * (1 - p)) as RGB;
-}
-const rgba = (c: RGB, a = 1) => `rgba(${c.map(Math.round).join(",")},${a})`;
-const mix = (a: RGB, b: RGB, p: number) => a.map((v, i) => v * p + b[i] * (1 - p)) as RGB;
 
 export default function ZenScene() {
   const canvas = useRef<HTMLCanvasElement>(null);
