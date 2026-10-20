@@ -119,3 +119,22 @@ export const TOYS: Record<ToyKind, Toy> = {
 };
 
 export const TOY_KINDS = Object.keys(TOYS) as ToyKind[];
+
+// A treat: a bone-shaped biscuit, given from your hand rather than thrown
+export function drawTreat(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = "#c98a45";
+  ctx.beginPath();
+  ctx.roundRect(-7, -2.5, 14, 5, 2.5);
+  for (const x of [-7.5, 7.5])
+    for (const y of [-2.5, 2.5]) {
+      ctx.moveTo(x + 3, y);
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+    }
+  ctx.fill();
+  ctx.fillStyle = "#9c6630";
+  for (const x of [-3, 0, 3]) {
+    ctx.beginPath();
+    ctx.arc(x, 0, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}

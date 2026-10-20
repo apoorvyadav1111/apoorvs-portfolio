@@ -10,7 +10,7 @@ import { LEG_COLOUR, MOUTH, drawDog, drawPaws, paws } from "./dog";
 import type { DogPose } from "./dog";
 import { drawGround, scenery } from "./lawn";
 import { makeView } from "./view";
-import { TOYS, TOY_KINDS } from "./toys";
+import { TOYS, TOY_KINDS, drawTreat } from "./toys";
 import type { ToyKind } from "./toys";
 
 // Fetch (/doodles/fetch), in a garden seen across at a gentle angle (view.ts).
@@ -20,6 +20,9 @@ import type { ToyKind } from "./toys";
 // in the air when it can, otherwise picks it up, and brings it back to
 // wherever you are (your pointer), dropping it at your feet. Tap the dog for
 // a pat, or hold and stroke it: it closes its eyes, wags, and hearts float up.
+// Or give it a treat (the Treat button): a biscuit appears in your hand, the
+// dog drops whatever it has, runs to you, sits, takes it with a hop, munches,
+// and jumps about happily.
 
 const RUN = 420; // the dog's top speed after the toy, px/s
 const TROT = 280; // bringing it back
@@ -31,7 +34,7 @@ const MAX_THROW = 1500;
 const DOG_SIZE = 1.25; // the dog sprite's scale, up close
 const LEGS = 9; // how high its body stands off the grass
 
-type Mode = "waiting" | "chasing" | "picking" | "returning";
+type Mode = "waiting" | "chasing" | "picking" | "returning" | "begging" | "munching" | "celebrating";
 
 const seasonNow = (): Season =>
   THEMES.find((t) => t.id === document.documentElement.dataset.palette)?.season ?? currentSeason();
@@ -40,6 +43,7 @@ export default function FetchGame() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [kind, setKind] = useState<ToyKind>("ball");
   const kindRef = useRef<ToyKind>("ball");
+  const treatAsked = useRef(0); // bumped by the Treat button
 
   useEffect(() => {
     kindRef.current = kind;
@@ -86,6 +90,11 @@ export default function FetchGame() {
     const dog = { x: w * 0.45, d: view.depth * 0.18, angle: Math.PI / 2, speed: 0, z: 0, vz: 0, mode: "waiting" as Mode, timer: 0, idle: 0 };
     const pose: DogPose = { run: 0, moving: false, sit: 1, wag: 0, blink: false, happy: 0 };
     let pats = 0;
+    let treats = 0;
+    let treatSeen = 0;
+    const treat = { offered: false, x: 0, d: 0, hopped: false };
+    let hops = 0;
+    let lastJoy = 0;
     let patting = 0; // seconds of happiness left
     let stroking = false; // holding down on the dog
     let lastHeart = 0;
@@ -110,7 +119,8 @@ export default function FetchGame() {
       const k = speed > MAX_THROW ? MAX_THROW / speed : 1;
       Object.assign(toy, { vx: vx * k, vd: vd * k, vz, held: false, still: false });
       thrown = true;
-      dog.mode = "chasing";
+      // A treat beats a toy: it'll chase this once it's done
+      if (dog.mode !== "begging" && dog.mode !== "munching" && dog.mode !== "celebrating") dog.mode = "chasing";
     };
 
     // Where the dog is on screen, and whether a point is on it
@@ -260,8 +270,76 @@ export default function FetchGame() {
         if (dog.z === 0) dog.vz = 0;
       }
 
+      // A treat on offer: drop everything (literally) and come
+      if (treatAsked.current !== treatSeen) {
+        treatSeen = treatAsked.current;
+        if (!treat.offered && dog.mode !== "munching" && dog.mode !== "celebrating") {
+          treat.offered = true;
+          treat.hopped = false;
+          if (toy.mouth) {
+            const m0 = mouth();
+            toy.mouth = false;
+            Object.assign(toy, { x: m0.x, d: m0.d, z: 8, vx: 0, vd: 0, vz: 60, still: false });
+          }
+          dog.mode = "begging";
+          dog.timer = 0;
+        }
+      }
+      if (treat.offered) {
+        // It's in your hand, wherever that is (above the toy picker)
+        treat.x = you.x;
+        treat.d = Math.max(you.d, view.unproject(w / 2, h - 130).d);
+      }
+
       const m = mouth();
       switch (dog.mode) {
+        case "begging": {
+          const close = head(treat.x, treat.d, RUN * 0.85, MOUTH * DOG_SIZE - 2) < MOUTH * DOG_SIZE + 8;
+          if (!close || dog.z > 0) break;
+          // Sit nicely, then a little hop up to take it
+          dog.timer += dt;
+          if (dog.timer > 0.45 && !treat.hopped) {
+            treat.hopped = true;
+            dog.vz = 260;
+          } else if (treat.hopped && dog.timer > 0.9) {
+            treat.offered = false;
+            treats++;
+            say("yum!");
+            dog.mode = "munching";
+            dog.timer = 1.1;
+          }
+          break;
+        }
+        case "munching": {
+          dog.speed *= Math.pow(0.001, dt);
+          dog.timer -= dt;
+          if (dog.timer <= 0) {
+            dog.mode = "celebrating";
+            dog.timer = 1.8;
+            hops = 3;
+          }
+          break;
+        }
+        case "celebrating": {
+          // Happy jumps and a spin, with hearts
+          dog.speed = 0;
+          dog.timer -= dt;
+          dog.angle += 7 * dt;
+          if (dog.z === 0 && hops > 0 && dog.timer < 1.7) {
+            hops--;
+            dog.vz = 330;
+          }
+          if (now - lastJoy > 220) {
+            lastJoy = now;
+            const p = view.project(dog.x, dog.d, LEGS + dog.z + 30);
+            hearts.push({ x: p.x + (Math.random() - 0.5) * 30, y: p.y, vx: (Math.random() - 0.5) * 40, age: 0, size: 7 + Math.random() * 4 });
+          }
+          if (dog.timer <= 0 && dog.z === 0) {
+            dog.mode = "waiting";
+            dog.idle = 0;
+          }
+          break;
+        }
         case "waiting": {
           dog.speed *= Math.pow(0.01, dt);
           dog.idle += dt;
@@ -320,9 +398,12 @@ export default function FetchGame() {
       }
       Object.assign(dog, onLawn(dog));
 
-      pose.moving = dog.speed > 25 && dog.mode !== "waiting" && dog.mode !== "picking";
-      pose.run += dt * dog.speed * 0.06;
-      pose.sit += ((dog.mode === "waiting" && !toy.held ? 1 : 0) - pose.sit) * Math.min(1, dt * 4);
+      const joyful = dog.mode === "munching" || dog.mode === "celebrating";
+      const sitting = (dog.mode === "waiting" && !toy.held) || (dog.mode === "begging" && dog.timer > 0 && !treat.hopped) || dog.mode === "munching";
+      pose.moving = (dog.speed > 25 && dog.mode !== "waiting" && dog.mode !== "picking") || dog.mode === "celebrating";
+      pose.run += dt * (dog.mode === "celebrating" ? 300 : dog.speed) * 0.06;
+      pose.sit += ((sitting ? 1 : 0) - pose.sit) * Math.min(1, dt * 4);
+      if (joyful) patting = Math.max(patting, 0.2);
       // Being patted: eyes close, the tail goes, it leans in and sits
       patting = Math.max(0, patting - dt);
       pose.happy += ((patting > 0 ? 1 : 0) - pose.happy) * Math.min(1, dt * 8);
@@ -410,12 +491,18 @@ export default function FetchGame() {
         ctx,
         pose,
         themeColor("--accent"),
-        toy.mouth
+        dog.mode === "munching"
           ? () => {
-              if (carried.crosswise) ctx.rotate(Math.PI / 2);
-              carried.draw(ctx);
+              ctx.rotate(Math.PI / 2);
+              ctx.scale(0.8, 0.8);
+              drawTreat(ctx);
             }
-          : undefined,
+          : toy.mouth
+            ? () => {
+                if (carried.crosswise) ctx.rotate(Math.PI / 2);
+                carried.draw(ctx);
+              }
+            : undefined,
       );
       ctx.restore();
     };
@@ -438,6 +525,22 @@ export default function FetchGame() {
       if (night()) {
         ctx.fillStyle = "rgba(255, 150, 70, 0.08)";
         ctx.fillRect(0, view.horizon - 20, w, h);
+      }
+
+      // The treat, held out in your hand
+      if (treat.offered) {
+        const ground = view.project(treat.x, treat.d);
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.beginPath();
+        ctx.ellipse(ground.x, ground.y, 8 * ground.s, 3 * ground.s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const p = view.project(treat.x, treat.d, 34);
+        ctx.save();
+        ctx.translate(p.x, p.y + Math.sin(now / 250) * 2);
+        ctx.scale(p.s * 1.5, p.s * 1.5);
+        ctx.rotate(-0.3);
+        drawTreat(ctx);
+        ctx.restore();
       }
 
       // Hearts from pats, floating up and fading
@@ -482,6 +585,7 @@ export default function FetchGame() {
       const tally = [
         fetches && `${fetches} ${fetches === 1 ? "FETCH" : "FETCHES"}`,
         pats && `${pats} ${pats === 1 ? "PAT" : "PATS"}`,
+        treats && `${treats} ${treats === 1 ? "TREAT" : "TREATS"}`,
       ].filter(Boolean);
       if (tally.length) {
         // Up in the sky: dark on a day sky, light on a sunset
@@ -530,11 +634,12 @@ export default function FetchGame() {
         aria-label="A garden, with a dog waiting for its toy"
         className="pointer-events-none fixed inset-0 z-[35] h-full w-full touch-none"
       />
-      {/* Which toy to throw */}
+      {/* Which toy to throw, and a treat to give */}
+      <div className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2">
       <div
         role="radiogroup"
         aria-label="Toy"
-        className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 gap-1 rounded-pill border border-white/30 bg-black/35 p-1 shadow-lg backdrop-blur"
+        className="flex gap-1 rounded-pill border border-white/30 bg-black/35 p-1 shadow-lg backdrop-blur"
       >
         {TOY_KINDS.map((k) => (
           <button
@@ -546,17 +651,26 @@ export default function FetchGame() {
               kind === k ? "bg-white text-neutral-900" : "text-white/85 hover:bg-white/15"
             }`}
           >
-            <ToyIcon kind={k} />
-            {TOYS[k].name}
+            <Icon draw={TOYS[k].draw} tilt={k === "stick" || k === "bone"} />
+            <span className="hidden sm:inline">{TOYS[k].name}</span>
           </button>
         ))}
+      </div>
+      <button
+        onClick={() => treatAsked.current++}
+        aria-label="Give the dog a treat"
+        className="flex items-center gap-1.5 rounded-pill border border-white/30 bg-[#c98a45] px-3 py-2 text-xs font-semibold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+      >
+        <Icon draw={drawTreat} tilt />
+        <span className="hidden sm:inline">Treat</span>
+      </button>
       </div>
     </Doodle>
   );
 }
 
-// The toy, drawn small for its button
-function ToyIcon({ kind }: { kind: ToyKind }) {
+// A toy (or the treat), drawn small for its button
+function Icon({ draw, tilt = false }: { draw: (ctx: CanvasRenderingContext2D) => void; tilt?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -566,8 +680,8 @@ function ToyIcon({ kind }: { kind: ToyKind }) {
     c.width = 22 * dpr;
     c.height = 22 * dpr;
     g.setTransform(dpr * 0.55, 0, 0, dpr * 0.55, 11 * dpr, 11 * dpr);
-    if (kind === "stick" || kind === "bone") g.rotate(-0.6);
-    TOYS[kind].draw(g);
-  }, [kind]);
+    if (tilt) g.rotate(-0.6);
+    draw(g);
+  }, [draw, tilt]);
   return <canvas ref={ref} aria-hidden className="h-[22px] w-[22px]" />;
 }
