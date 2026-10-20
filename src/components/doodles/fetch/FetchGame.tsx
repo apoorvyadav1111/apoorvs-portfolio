@@ -24,7 +24,9 @@ const RUN = 420; // the dog's top speed after the toy, px/s
 const TROT = 280; // bringing it back
 const TURN = 8; // how fast it can turn, rad/s
 const DOG_GRAVITY = 1500;
-const MAX_THROW = 2600;
+// A flick's strength: screen speed × POWER, at most MAX_THROW across the lawn
+const POWER = 0.55;
+const MAX_THROW = 1500;
 const DOG_SIZE = 1.25; // the dog sprite's scale, up close
 const LEGS = 9; // how high its body stands off the grass
 
@@ -86,7 +88,7 @@ export default function FetchGame() {
     let fetches = 0;
     let thrown = false;
     let bubble = { text: "", until: 0 };
-    let samples: { x: number; d: number; t: number }[] = [];
+    let samples: { X: number; Y: number; t: number }[] = []; // the hand, on screen
     let down: { X: number; Y: number; t: number } | null = null;
 
     const say = (text: string, ms = 1100) => (bubble = { text, until: performance.now() + ms });
@@ -116,7 +118,7 @@ export default function FetchGame() {
       if (free() && Math.hypot(e.clientX - seen.x, e.clientY - seen.y) < 46) {
         toy.held = true;
         toy.still = false;
-        samples = [{ ...under(e.clientX, e.clientY), t: e.timeStamp }];
+        samples = [{ X: e.clientX, Y: e.clientY, t: e.timeStamp }];
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -126,25 +128,31 @@ export default function FetchGame() {
       const g = under(e.clientX, e.clientY);
       const s = view.project(g.x, g.d).s;
       Object.assign(toy, under(e.clientX, e.clientY + HAND * s * 0.9), { z: HAND });
-      samples.push({ ...g, t: e.timeStamp });
+      samples.push({ X: e.clientX, Y: e.clientY, t: e.timeStamp });
       while (samples.length > 2 && e.timeStamp - samples[0].t > 100) samples.shift();
     };
     const onUp = (e: PointerEvent) => {
       if (!down) return;
       const t = TOYS[kindRef.current];
       if (toy.held) {
-        // Let go: it leaves with your hand's recent speed across the lawn
+        // Let go: it leaves with your hand's speed as you see it on screen,
+        // turned into lawn distance at the toy's own spot (the far end of the
+        // screen covers much more lawn, which made flicks up it far too strong)
         const first = samples[0];
-        const end = under(e.clientX, e.clientY);
         const dt = Math.max((e.timeStamp - first.t) / 1000, 0.016);
-        const vx = (end.x - first.x) / dt;
-        const vd = (end.d - first.d) / dt;
+        const sx = (e.clientX - first.X) / dt;
+        const sy = (e.clientY - first.Y) / dt;
+        const at = view.project(toy.x, toy.d);
+        const perX = 1 / at.s; // lawn per screen px, across
+        const perD = view.unproject(at.x, at.y - 1).d - toy.d; // and back
+        const vx = sx * perX * POWER;
+        const vd = -sy * perD * POWER;
         const speed = Math.hypot(vx, vd);
-        if (speed < 90) {
+        if (speed < 60) {
           toy.held = false;
           toy.still = false;
           toy.vx = toy.vd = toy.vz = 0;
-        } else launch(vx, vd, Math.min(240 + speed * 0.22, 700) * t.lift);
+        } else launch(vx, vd, Math.min(180 + speed * 0.2, 520) * t.lift);
       } else if (free() && e.timeStamp - down.t < 350 && Math.hypot(e.clientX - down.X, e.clientY - down.Y) < 12) {
         // A tap: lob it to land about there
         const aim = under(e.clientX, e.clientY);
