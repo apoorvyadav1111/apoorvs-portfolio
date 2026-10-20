@@ -3,9 +3,9 @@
 import { useEffect, useRef } from "react";
 import { THEMES } from "@/themes";
 import type { Season } from "@/themes";
-import { color, mix, rgba } from "./colors";
+import { color, mix, rgba } from "../colors";
 
-// The landscape behind zen mode (/zen): sky glow, a sun by day or a moon by
+// The landscape behind zen (/doodles/zen): sky glow, a sun by day or a moon by
 // night (slowly waxing and waning), drifting clouds, stars, soft hills along the bottom, and a few things only one season has:
 // spring showers and butterflies, summer's drifting dandelion seeds, autumn's
 // birds heading south, winter's aurora. Colours come from the theme's CSS

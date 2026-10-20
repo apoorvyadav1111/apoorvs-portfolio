@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ZenMode from "@/components/zen/ZenMode";
+import ZenMode from "@/components/doodles/zen/ZenMode";
 
 export const metadata: Metadata = {
   title: "Zen",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Zen() {
-  return <ZenMode other={{ href: "/zen/fetch", label: "play fetch" }} />;
+  return <ZenMode />;
 }

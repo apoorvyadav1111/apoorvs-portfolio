@@ -392,23 +392,23 @@ body::before {
   user-select: none;
 }
 
-/* Zen mode (/zen): only the seasons. Everything else steps aside. */
-[data-zen] header,
-[data-zen] footer,
-[data-zen] .doze,
-[data-zen] [data-timelapse-badge] {
+/* Doodles (/doodles/*) play full screen: everything else steps aside */
+[data-doodle] header,
+[data-doodle] footer,
+[data-doodle] .doze,
+[data-doodle] [data-timelapse-badge] {
   display: none;
 }
-.zen {
-  animation: zen-in 1.6s ease-out both;
+.doodle {
+  animation: doodle-in 1.6s ease-out both;
 }
-@keyframes zen-in {
+@keyframes doodle-in {
   from {
     opacity: 0;
   }
 }
-[data-zen-still],
-[data-zen-still] * {
+[data-doodle-still],
+[data-doodle-still] * {
   cursor: none;
 }
 

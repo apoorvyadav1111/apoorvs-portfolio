@@ -50,8 +50,8 @@ export default function Footer({ personal }: FooterProps) {
             <MakeYourOwnDialog prompt={makeYourOwnPrompt} />
             <TimelapseLink />
             {" · "}
-            <Link href="/zen" className="underline underline-offset-4 transition-colors hover:text-fg">
-              Zen
+            <Link href="/doodles" className="underline underline-offset-4 transition-colors hover:text-fg">
+              Doodles
             </Link>
           </div>
           <p className="text-xs">Last updated {lastUpdated}</p>

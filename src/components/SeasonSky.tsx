@@ -927,7 +927,7 @@ export default function SeasonSky() {
       mowerButton.innerHTML = svg(MOWER_ICON);
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       const wx = weatherNow();
-      if (!kind || reduce || document.hidden || wx === "off") return;
+      if (!kind || reduce || document.hidden || wx === "off" || skySettings().hidden) return;
       resize();
       speed = WEATHER[wx].speed * skySettings().speed;
       particles = Array.from({ length: target(wx) }, () => spawn(true, kind!));

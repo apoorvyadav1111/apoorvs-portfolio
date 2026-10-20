@@ -31,6 +31,7 @@ export interface SkyPlugin {
   sizeScale?: number; // how big
   speedScale?: number; // how fast
   alwaysOn?: boolean; // fall even when the visitor set particles to Off
+  hidden?: boolean; // no sky at all while this is on (a doodle with its own world)
   holdTouch?: boolean; // a finger moving over the page drives the plug-in, not scrolling
   pointer?: (x: number, y: number) => void; // the pointer or a finger moved
   push?: (p: SkyParticle, dt: number) => void; // nudge each falling particle, every frame
@@ -62,6 +63,7 @@ export function skySettings() {
     size: product("sizeScale"),
     speed: product("speedScale"),
     alwaysOn: all.some((p) => p.alwaysOn),
+    hidden: all.some((p) => p.hidden),
     holdTouch: all.some((p) => p.holdTouch),
   };
 }

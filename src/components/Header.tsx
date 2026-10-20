@@ -6,13 +6,14 @@ import { usePathname } from "next/navigation";
 import AppearanceMenu from "./AppearanceMenu";
 import { featureOn } from "@/lib/features";
 
-// `wide` links are home-page anchors, hidden on phones to keep the bar on one line
+// `wide` links are hidden on phones to keep the bar on one line (Doodles is in the footer there)
 const NAV = [
   { href: "/#work", label: "Work", match: null, wide: true },
   { href: "/#projects", label: "Projects", match: null, wide: true },
   { href: "/blog", label: "Writing", match: "/blog" },
   { href: "/reading", label: "Reading", match: "/reading" },
   { href: "/photos", label: "Photos", match: "/photos" },
+  { href: "/doodles", label: "Doodles", match: "/doodles", wide: true },
 ];
 
 export default function Header({ name }: { name: string }) {

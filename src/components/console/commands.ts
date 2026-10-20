@@ -479,13 +479,19 @@ export const COMMANDS: Record<string, Command> = {
     group: "Fun",
     usage: "zen",
     about: "nothing to read, just the seasons going by (Esc to come back)",
-    run: (sh) => sh.go("/zen"),
+    run: (sh) => sh.go("/doodles/zen"),
+  },
+  doodles: {
+    group: "Fun",
+    usage: "doodles",
+    about: "little things made for fun: zen, fetch…",
+    run: (sh) => sh.go("/doodles"),
   },
   fetch: {
     group: "Fun",
     usage: "fetch",
     about: "a dog, a ball and a park (Esc to come back)",
-    run: (sh) => sh.go("/zen/fetch"),
+    run: (sh) => sh.go("/doodles/fetch"),
   },
   timelapse: {
     group: "Root",
