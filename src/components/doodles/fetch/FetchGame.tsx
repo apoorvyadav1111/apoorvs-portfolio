@@ -18,7 +18,8 @@ import type { ToyKind } from "./toys";
 // is further away), or tap where it should land. It rises into the air over
 // its shadow, lands, bounces or slides by its own nature (toys.ts). The dog chases it, leaps to catch it
 // in the air when it can, otherwise picks it up, and brings it back to
-// wherever you are (your pointer), dropping it at your feet.
+// wherever you are (your pointer), dropping it at your feet. Tap the dog for
+// a pat, or hold and stroke it: it closes its eyes, wags, and hearts float up.
 
 const RUN = 420; // the dog's top speed after the toy, px/s
 const TROT = 280; // bringing it back
@@ -83,7 +84,12 @@ export default function FetchGame() {
     // Everything lives on the ground plane: x across, d back from you, z up
     const toy = { x: w * 0.52, d: view.depth * 0.22, z: 0, vx: 0, vd: 0, vz: 0, angle: 0, held: false, mouth: false, still: true };
     const dog = { x: w * 0.45, d: view.depth * 0.18, angle: Math.PI / 2, speed: 0, z: 0, vz: 0, mode: "waiting" as Mode, timer: 0, idle: 0 };
-    const pose: DogPose = { run: 0, moving: false, sit: 1, wag: 0, blink: false };
+    const pose: DogPose = { run: 0, moving: false, sit: 1, wag: 0, blink: false, happy: 0 };
+    let pats = 0;
+    let patting = 0; // seconds of happiness left
+    let stroking = false; // holding down on the dog
+    let lastHeart = 0;
+    let hearts: { x: number; y: number; vx: number; age: number; size: number }[] = [];
     const you = { x: w * 0.5, d: view.depth * 0.08 };
     let fetches = 0;
     let thrown = false;
@@ -107,6 +113,19 @@ export default function FetchGame() {
       dog.mode = "chasing";
     };
 
+    // Where the dog is on screen, and whether a point is on it
+    const onDog = (X: number, Y: number) => {
+      const p = view.project(dog.x, dog.d, LEGS + dog.z);
+      return Math.hypot(X - p.x, (Y - p.y) / 0.8) < 34 * p.s * DOG_SIZE;
+    };
+    // A pat: happy for a moment, and a heart or two
+    const pat = (X: number, Y: number, count: number) => {
+      patting = Math.max(patting, 1.6);
+      lastHeart = performance.now();
+      for (let i = 0; i < count; i++)
+        hearts.push({ x: X + (Math.random() - 0.5) * 24, y: Y - 10, vx: (Math.random() - 0.5) * 30, age: -i * 0.12, size: 7 + Math.random() * 4 });
+    };
+
     // ---- Your hand: the screen point under it, found on the lawn ----
     const HAND = 26; // a held toy is lifted this high
     const under = (X: number, Y: number) => onLawn(view.unproject(X, Y));
@@ -119,10 +138,18 @@ export default function FetchGame() {
         toy.held = true;
         toy.still = false;
         samples = [{ X: e.clientX, Y: e.clientY, t: e.timeStamp }];
+      } else if (onDog(e.clientX, e.clientY)) {
+        stroking = true;
+        pats++;
+        pat(e.clientX, e.clientY, 2);
       }
     };
     const onMove = (e: PointerEvent) => {
       Object.assign(you, under(e.clientX, e.clientY));
+      // A hand over the dog, ready to pat it
+      document.documentElement.style.cursor = !toy.held && onDog(e.clientX, e.clientY) ? "pointer" : "";
+      // Stroking: a heart every so often as your hand moves over it
+      if (stroking && onDog(e.clientX, e.clientY) && performance.now() - lastHeart > 260) pat(e.clientX, e.clientY, 1);
       if (!toy.held) return;
       // Held up in your hand: the toy shows at the pointer, its shadow below
       const g = under(e.clientX, e.clientY);
@@ -133,6 +160,12 @@ export default function FetchGame() {
     };
     const onUp = (e: PointerEvent) => {
       if (!down) return;
+      if (stroking) {
+        // A pat is a pat, not a throw
+        stroking = false;
+        down = null;
+        return;
+      }
       const t = TOYS[kindRef.current];
       if (toy.held) {
         // Let go: it leaves with your hand's speed as you see it on screen,
@@ -163,7 +196,7 @@ export default function FetchGame() {
       }
       down = null;
     };
-    const onTouch = (e: TouchEvent) => toy.held && e.cancelable && e.preventDefault();
+    const onTouch = (e: TouchEvent) => (toy.held || stroking) && e.cancelable && e.preventDefault();
 
     // ---- The world ----
     const step = (dt: number, now: number) => {
@@ -290,8 +323,18 @@ export default function FetchGame() {
       pose.moving = dog.speed > 25 && dog.mode !== "waiting" && dog.mode !== "picking";
       pose.run += dt * dog.speed * 0.06;
       pose.sit += ((dog.mode === "waiting" && !toy.held ? 1 : 0) - pose.sit) * Math.min(1, dt * 4);
-      pose.wag += dt * (toy.held || dog.mode === "returning" ? 22 : dog.mode === "waiting" ? 9 : 14);
+      // Being patted: eyes close, the tail goes, it leans in and sits
+      patting = Math.max(0, patting - dt);
+      pose.happy += ((patting > 0 ? 1 : 0) - pose.happy) * Math.min(1, dt * 8);
+      if (patting > 0 && dog.mode === "waiting") pose.sit += (1 - pose.sit) * Math.min(1, dt * 6);
+      pose.wag += dt * (patting > 0 ? 30 : toy.held || dog.mode === "returning" ? 22 : dog.mode === "waiting" ? 9 : 14);
       pose.blink = now % 3800 < 140;
+      for (const heart of hearts) {
+        heart.age += dt;
+        heart.y -= 46 * dt;
+        heart.x += heart.vx * dt;
+      }
+      hearts = hearts.filter((heart) => heart.age < 1.4);
     };
 
     // Lying on the ground at (x, d), facing `angle`: what's drawn after this
@@ -397,6 +440,21 @@ export default function FetchGame() {
         ctx.fillRect(0, view.horizon - 20, w, h);
       }
 
+      // Hearts from pats, floating up and fading
+      for (const heart of hearts) {
+        if (heart.age < 0) continue;
+        const a = Math.min(1, heart.age * 6) * (1 - heart.age / 1.4);
+        const r = heart.size * (0.6 + Math.min(heart.age, 0.3));
+        ctx.globalAlpha = a;
+        ctx.fillStyle = "#ef5a7a";
+        ctx.beginPath();
+        ctx.moveTo(heart.x, heart.y + r * 0.9);
+        ctx.bezierCurveTo(heart.x - r * 1.4, heart.y - r * 0.2, heart.x - r * 0.6, heart.y - r * 1.2, heart.x, heart.y - r * 0.45);
+        ctx.bezierCurveTo(heart.x + r * 0.6, heart.y - r * 1.2, heart.x + r * 1.4, heart.y - r * 0.2, heart.x, heart.y + r * 0.9);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
       // Speech bubble
       if (now < bubble.until) {
         const p = view.project(dog.x, dog.d, dog.z + 70);
@@ -419,10 +477,20 @@ export default function FetchGame() {
       if (!thrown) {
         ctx.textAlign = "center";
         ctx.fillText("DRAG THE TOY AND LET GO · OR TAP WHERE TO THROW", w / 2, view.horizon + 40);
+        ctx.fillText("TAP THE DOG FOR A PAT", w / 2, view.horizon + 58);
       }
-      if (fetches) {
+      const tally = [
+        fetches && `${fetches} ${fetches === 1 ? "FETCH" : "FETCHES"}`,
+        pats && `${pats} ${pats === 1 ? "PAT" : "PATS"}`,
+      ].filter(Boolean);
+      if (tally.length) {
+        // Up in the sky: dark on a day sky, light on a sunset
         ctx.textAlign = "right";
-        ctx.fillText(`${fetches} ${fetches === 1 ? "FETCH" : "FETCHES"}`, w - 24, 34);
+        if (!night()) {
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = "rgba(30, 45, 70, 0.7)";
+        }
+        ctx.fillText(tally.join(" · "), w - 24, 34);
       }
       ctx.shadowBlur = 0;
 
@@ -450,6 +518,7 @@ export default function FetchGame() {
       removeEventListener("touchmove", onTouch);
       removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisible);
+      document.documentElement.style.cursor = "";
     };
   }, []);
 

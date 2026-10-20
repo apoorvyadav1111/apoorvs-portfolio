@@ -10,6 +10,7 @@ export interface DogPose {
   sit: number; // 0 standing → 1 sitting
   wag: number; // tail swing phase, radians
   blink: boolean;
+  happy: number; // 0 → 1 while being patted: eyes closed in happy arcs
 }
 
 const FUR = "#c8913f";
@@ -87,7 +88,14 @@ export function drawDog(ctx: CanvasRenderingContext2D, p: DogPose, collar: strin
   ctx.arc(33, 0, 2.6, 0, Math.PI * 2);
   ctx.fill();
   for (const side of [-1, 1]) {
-    if (p.blink) {
+    if (p.happy > 0.5) {
+      // Eyes shut in contentment: little upturned arcs
+      ctx.strokeStyle = NOSE;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.arc(23.5, side * 4, 1.8, Math.PI * 0.6, Math.PI * 1.4);
+      ctx.stroke();
+    } else if (p.blink) {
       ctx.strokeStyle = NOSE;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
