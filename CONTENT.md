@@ -68,3 +68,19 @@ in the header on a phone, for a small shell: `help` lists what it can do.
 - Features visitors can switch off (`disable eggs`) are in `src/lib/features.ts`.
 - `sudo su` is a playful unlock, not security: it lets a visitor wear any theme
   in any season for the rest of the tab. Nothing secret sits behind it.
+
+## Doodles
+
+Little full-screen things made for fun, listed on `/doodles` (`src/app/doodles/page.tsx`).
+
+- Each doodle is its own page under `src/app/doodles/<name>/` and its own folder
+  under `src/components/doodles/<name>/`, so its code only loads where it's played.
+  Wrap it in `<Doodle title="…">` (`src/components/doodles/Doodle.tsx`) for the
+  full-screen shell: the site steps aside, and Esc or "← doodles" goes back.
+  Then add a card to `DOODLES` in `src/app/doodles/page.tsx`, and the page to
+  `src/app/sitemap.ts`.
+- Zen (`zen/`) draws a landscape under the seasonal sky and adds to it through
+  plug-ins (`src/lib/sky.ts`; `wind.ts` is one).
+- Fetch (`fetch/`): add a toy with one entry in `toys.ts` (its flight and look);
+  the garden is `lawn.ts`, the camera `view.ts`, and how hard a flick throws is
+  `POWER` in `FetchGame.tsx`.
