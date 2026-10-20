@@ -383,10 +383,10 @@ export default function FetchGame() {
       order.sort((a, b) => b.d - a.d);
       for (const o of order) o.draw();
 
-      // Night settles over everything in the garden
+      // The same golden light over what stands in the garden, so it all matches
       if (night()) {
-        ctx.fillStyle = "rgba(10, 16, 34, 0.25)";
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(255, 150, 70, 0.08)";
+        ctx.fillRect(0, view.horizon - 20, w, h);
       }
 
       // Speech bubble

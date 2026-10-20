@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 // The full-screen shell every doodle (/doodles/*) plays in: the site's header,
-// footer and text step aside (see [data-doodle] in globals.css), a faint
-// "leave" and a link back to the doodles appear when you move and fade when
-// you're still (the pointer too), and Esc goes back where you came from.
+// footer and text step aside (see [data-doodle] in globals.css), a faint way
+// back to the doodles appears when you move and fades when you're still (the
+// pointer too), and Esc goes there too.
 // Each doodle is its own page that wraps itself in this, so its code only
 // loads where it's played.
 
@@ -37,7 +37,7 @@ export default function Doodle({
       }, HINT_MS);
     };
     stir();
-    const leave = () => (history.length > 1 ? router.back() : router.push("/doodles"));
+    const leave = () => router.push("/doodles");
     const onKey = (e: KeyboardEvent) => (e.key === "Escape" ? leave() : stir());
     addEventListener("pointermove", stir, { passive: true });
     addEventListener("pointerdown", stir, { passive: true });
@@ -61,14 +61,8 @@ export default function Doodle({
           awake ? "opacity-90" : "pointer-events-none opacity-0"
         }`}
       >
-        <button
-          onClick={() => (history.length > 1 ? router.back() : router.push("/doodles"))}
-          className="rounded-pill px-3 py-1.5 transition-colors hover:text-fg"
-        >
-          ← leave · esc
-        </button>
         <Link href="/doodles" className="rounded-pill px-3 py-1.5 transition-colors hover:text-fg">
-          all doodles
+          ← doodles · esc
         </Link>
       </div>
     </div>

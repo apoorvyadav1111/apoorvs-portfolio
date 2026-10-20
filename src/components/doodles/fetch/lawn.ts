@@ -6,7 +6,8 @@ import type { View } from "./view";
 // drawGround paints everything lying flat, once into its own canvas: the sky
 // and a far tree line above the horizon, then the lawn running back to it,
 // striped, with a stepping-stone path, a pond and the season's touches
-// (flowers, fallen leaves, snow). Night darkens it.
+// (flowers, fallen leaves, snow). In dark mode it's sunset: a warm sky with
+// the sun going down, and golden light over the garden.
 //
 // scenery() lists what stands up out of the lawn (trees and bushes) with how
 // far back each is, so the game can draw them in depth order with the dog:
@@ -46,18 +47,37 @@ const BUSHES = [
   { x: 0.86, d: 0.32 },
 ];
 
-export function drawGround(ctx: CanvasRenderingContext2D, v: View, season: Season, night: boolean) {
+export function drawGround(ctx: CanvasRenderingContext2D, v: View, season: Season, evening: boolean) {
   const { w, h, horizon, depth } = v;
   const look = LOOK[season];
   const rand = seeded(Math.round(w) * 7 + Math.round(h));
   const at = (x: number, d: number) => v.project(x, d);
 
-  // Sky, and a soft far tree line along the horizon
+  // Sky: day, or in dark mode a sunset, dusky blue up high warming to gold
+  // at the horizon, with the sun going down behind the far trees
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, look.sky[0]);
-  sky.addColorStop(1, look.sky[1]);
+  if (evening) {
+    sky.addColorStop(0, "#4b5a8e");
+    sky.addColorStop(0.55, "#e7a07f");
+    sky.addColorStop(1, "#f7cf8e");
+  } else {
+    sky.addColorStop(0, look.sky[0]);
+    sky.addColorStop(1, look.sky[1]);
+  }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, horizon + 2);
+  if (evening) {
+    const sunX = w * 0.7;
+    const glow = ctx.createRadialGradient(sunX, horizon, 0, sunX, horizon, w * 0.45);
+    glow.addColorStop(0, "rgba(255, 196, 120, 0.55)");
+    glow.addColorStop(1, "rgba(255, 196, 120, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, horizon + 2);
+    ctx.fillStyle = "#ffd58a";
+    ctx.beginPath();
+    ctx.arc(sunX, horizon - 6, 26, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = look.far;
   ctx.beginPath();
   ctx.moveTo(0, horizon + 2);
@@ -201,9 +221,12 @@ export function drawGround(ctx: CanvasRenderingContext2D, v: View, season: Seaso
     }
   }
 
-  if (night) {
-    ctx.fillStyle = "rgba(10, 16, 34, 0.35)";
-    ctx.fillRect(0, 0, w, h);
+  // Golden-hour light over the lawn (below the horizon; the sky has its own)
+  if (evening) {
+    ctx.fillStyle = "rgba(255, 150, 70, 0.12)";
+    ctx.fillRect(0, horizon - 20, w, h);
+    ctx.fillStyle = "rgba(60, 40, 90, 0.06)";
+    ctx.fillRect(0, horizon - 20, w, h);
   }
 }
 
