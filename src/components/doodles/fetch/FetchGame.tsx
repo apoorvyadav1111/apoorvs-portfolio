@@ -6,16 +6,17 @@ import type { Season } from "@/themes";
 import { addToSky } from "@/lib/sky";
 import { themeColor } from "../colors";
 import Doodle from "../Doodle";
-import { MOUTH, drawDog } from "./dog";
+import { LEG_COLOUR, MOUTH, drawDog, drawPaws, paws } from "./dog";
 import type { DogPose } from "./dog";
-import { drawLawn } from "./lawn";
+import { drawGround, scenery } from "./lawn";
+import { makeView } from "./view";
 import { TOYS, TOY_KINDS } from "./toys";
 import type { ToyKind } from "./toys";
 
-// Fetch (/doodles/fetch), in a garden seen from above. Pick a toy, grab it
-// and flick it anywhere across the lawn, or tap where it should land. It
-// flies with a little height (its shadow shows how much), lands, bounces or
-// slides by its own nature (toys.ts). The dog chases it, leaps to catch it
+// Fetch (/doodles/fetch), in a garden seen across at a gentle angle (view.ts).
+// Pick a toy, grab it and flick it anywhere across the lawn (up the screen
+// is further away), or tap where it should land. It rises into the air over
+// its shadow, lands, bounces or slides by its own nature (toys.ts). The dog chases it, leaps to catch it
 // in the air when it can, otherwise picks it up, and brings it back to
 // wherever you are (your pointer), dropping it at your feet.
 
@@ -23,7 +24,9 @@ const RUN = 420; // the dog's top speed after the toy, px/s
 const TROT = 280; // bringing it back
 const TURN = 8; // how fast it can turn, rad/s
 const DOG_GRAVITY = 1500;
-const MAX_THROW = 2200;
+const MAX_THROW = 2600;
+const DOG_SIZE = 1.25; // the dog sprite's scale, up close
+const LEGS = 9; // how high its body stands off the grass
 
 type Mode = "waiting" | "chasing" | "picking" | "returning";
 
@@ -50,14 +53,18 @@ export default function FetchGame() {
     let h = 0;
     let frame = 0;
     let last = performance.now();
-    const lawn = document.createElement("canvas");
-    const paintLawn = () => {
+    let view = makeView(innerWidth, innerHeight);
+    let things = scenery(view, seasonNow());
+    const ground = document.createElement("canvas");
+    const night = () => document.documentElement.dataset.theme !== "light";
+    const paintGround = () => {
       const dpr = Math.min(devicePixelRatio, 2);
-      lawn.width = w * dpr;
-      lawn.height = h * dpr;
-      const g = lawn.getContext("2d")!;
+      ground.width = w * dpr;
+      ground.height = h * dpr;
+      const g = ground.getContext("2d")!;
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawLawn(g, w, h, seasonNow(), document.documentElement.dataset.theme !== "light");
+      drawGround(g, view, seasonNow(), night());
+      things = scenery(view, seasonNow());
     };
     const resize = () => {
       const dpr = Math.min(devicePixelRatio, 2);
@@ -66,76 +73,85 @@ export default function FetchGame() {
       el.width = w * dpr;
       el.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paintLawn();
+      view = makeView(w, h);
+      paintGround();
     };
     resize();
 
-    // The toy: position on the lawn, height above it (z), and how it's moving
-    const toy = { x: w * 0.5, y: h * 0.62, z: 0, vx: 0, vy: 0, vz: 0, angle: 0, held: false, mouth: false, still: true };
-    const dog = { x: w * 0.5 - 50, y: h * 0.62, angle: 0, speed: 0, z: 0, vz: 0, mode: "waiting" as Mode, timer: 0, idle: 0 };
+    // Everything lives on the ground plane: x across, d back from you, z up
+    const toy = { x: w * 0.52, d: view.depth * 0.22, z: 0, vx: 0, vd: 0, vz: 0, angle: 0, held: false, mouth: false, still: true };
+    const dog = { x: w * 0.45, d: view.depth * 0.18, angle: Math.PI / 2, speed: 0, z: 0, vz: 0, mode: "waiting" as Mode, timer: 0, idle: 0 };
     const pose: DogPose = { run: 0, moving: false, sit: 1, wag: 0, blink: false };
-    const you = { x: w * 0.5, y: h * 0.75 };
+    const you = { x: w * 0.5, d: view.depth * 0.08 };
     let fetches = 0;
     let thrown = false;
     let bubble = { text: "", until: 0 };
-    let samples: { x: number; y: number; t: number }[] = [];
-    let down: { x: number; y: number; t: number } | null = null;
+    let samples: { x: number; d: number; t: number }[] = [];
+    let down: { X: number; Y: number; t: number } | null = null;
 
     const say = (text: string, ms = 1100) => (bubble = { text, until: performance.now() + ms });
     const free = () => !toy.held && !toy.mouth;
-    const mouth = () => ({ x: dog.x + Math.cos(dog.angle) * MOUTH, y: dog.y + Math.sin(dog.angle) * MOUTH });
+    const mouth = () => ({ x: dog.x + Math.cos(dog.angle) * MOUTH * DOG_SIZE, d: dog.d + Math.sin(dog.angle) * MOUTH * DOG_SIZE });
+    const onLawn = (p: { x: number; d: number }) => ({
+      x: Math.max(16, Math.min(w - 16, p.x)),
+      d: Math.max(8, Math.min(view.depth * 0.97, p.d)),
+    });
 
-    const launch = (vx: number, vy: number, vz: number) => {
-      const speed = Math.hypot(vx, vy);
+    const launch = (vx: number, vd: number, vz: number) => {
+      const speed = Math.hypot(vx, vd);
       const k = speed > MAX_THROW ? MAX_THROW / speed : 1;
-      Object.assign(toy, { vx: vx * k, vy: vy * k, vz, held: false, still: false });
+      Object.assign(toy, { vx: vx * k, vd: vd * k, vz, held: false, still: false });
       thrown = true;
       dog.mode = "chasing";
     };
 
-    // ---- Your hand ----
+    // ---- Your hand: the screen point under it, found on the lawn ----
+    const HAND = 26; // a held toy is lifted this high
+    const under = (X: number, Y: number) => onLawn(view.unproject(X, Y));
     const onDown = (e: PointerEvent) => {
       if ((e.target as Element).closest?.("button, a")) return;
-      you.x = e.clientX;
-      you.y = e.clientY;
-      down = { x: e.clientX, y: e.clientY, t: e.timeStamp };
-      if (free() && Math.hypot(e.clientX - toy.x, e.clientY - toy.y) < 44) {
+      Object.assign(you, under(e.clientX, e.clientY));
+      down = { X: e.clientX, Y: e.clientY, t: e.timeStamp };
+      const seen = view.project(toy.x, toy.d, toy.z);
+      if (free() && Math.hypot(e.clientX - seen.x, e.clientY - seen.y) < 46) {
         toy.held = true;
         toy.still = false;
-        samples = [{ x: e.clientX, y: e.clientY, t: e.timeStamp }];
+        samples = [{ ...under(e.clientX, e.clientY), t: e.timeStamp }];
       }
     };
     const onMove = (e: PointerEvent) => {
-      you.x = e.clientX;
-      you.y = e.clientY;
+      Object.assign(you, under(e.clientX, e.clientY));
       if (!toy.held) return;
-      toy.x = e.clientX;
-      toy.y = e.clientY;
-      toy.z = 24; // lifted in your hand
-      samples.push({ x: e.clientX, y: e.clientY, t: e.timeStamp });
+      // Held up in your hand: the toy shows at the pointer, its shadow below
+      const g = under(e.clientX, e.clientY);
+      const s = view.project(g.x, g.d).s;
+      Object.assign(toy, under(e.clientX, e.clientY + HAND * s * 0.9), { z: HAND });
+      samples.push({ ...g, t: e.timeStamp });
       while (samples.length > 2 && e.timeStamp - samples[0].t > 100) samples.shift();
     };
     const onUp = (e: PointerEvent) => {
       if (!down) return;
       const t = TOYS[kindRef.current];
       if (toy.held) {
-        // Let go: it leaves with your hand's recent speed, and a little height
+        // Let go: it leaves with your hand's recent speed across the lawn
         const first = samples[0];
+        const end = under(e.clientX, e.clientY);
         const dt = Math.max((e.timeStamp - first.t) / 1000, 0.016);
-        const vx = (e.clientX - first.x) / dt;
-        const vy = (e.clientY - first.y) / dt;
-        const speed = Math.hypot(vx, vy);
+        const vx = (end.x - first.x) / dt;
+        const vd = (end.d - first.d) / dt;
+        const speed = Math.hypot(vx, vd);
         if (speed < 90) {
           toy.held = false;
           toy.still = false;
-          toy.vx = toy.vy = toy.vz = 0;
-        } else launch(vx, vy, Math.min(220 + speed * 0.25, 650) * t.lift);
-      } else if (free() && e.timeStamp - down.t < 350 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 12) {
+          toy.vx = toy.vd = toy.vz = 0;
+        } else launch(vx, vd, Math.min(240 + speed * 0.22, 700) * t.lift);
+      } else if (free() && e.timeStamp - down.t < 350 && Math.hypot(e.clientX - down.X, e.clientY - down.Y) < 12) {
         // A tap: lob it to land about there
-        const dx = e.clientX - toy.x;
-        const dy = e.clientY - toy.y;
-        const flight = 0.55 + Math.hypot(dx, dy) / 1600;
-        launch(dx / flight, dy / flight, (t.gravity * flight) / 2);
+        const aim = under(e.clientX, e.clientY);
+        const dx = aim.x - toy.x;
+        const dd = aim.d - toy.d;
+        const flight = 0.55 + Math.hypot(dx, dd) / 1600;
+        launch(dx / flight, dd / flight, (t.gravity * flight) / 2);
       }
       down = null;
     };
@@ -152,7 +168,7 @@ export default function FetchGame() {
           toy.z += toy.vz * dt;
           const keep = Math.pow(t.drag, dt);
           toy.vx *= keep;
-          toy.vy *= keep;
+          toy.vd *= keep;
           toy.angle += t.spin * dt;
           if (toy.z <= 0) {
             toy.z = 0;
@@ -162,41 +178,39 @@ export default function FetchGame() {
         } else {
           const keep = Math.pow(t.roll, dt);
           toy.vx *= keep;
-          toy.vy *= keep;
-          if (kindRef.current === "ball") toy.angle += Math.hypot(toy.vx, toy.vy) * dt * 0.1;
-          if (Math.hypot(toy.vx, toy.vy) < 8) {
-            toy.vx = toy.vy = 0;
+          toy.vd *= keep;
+          if (kindRef.current === "ball") toy.angle += Math.hypot(toy.vx, toy.vd) * dt * 0.1;
+          if (Math.hypot(toy.vx, toy.vd) < 8) {
+            toy.vx = toy.vd = 0;
             toy.still = true;
           }
         }
         toy.x += toy.vx * dt;
-        toy.y += toy.vy * dt;
+        toy.d += toy.vd * dt;
         // The garden's edges send it back
-        if (toy.x < 12 || toy.x > w - 12) {
-          toy.vx = -toy.vx * 0.5;
-          toy.x = Math.max(12, Math.min(w - 12, toy.x));
-        }
-        if (toy.y < 12 || toy.y > h - 12) {
-          toy.vy = -toy.vy * 0.5;
-          toy.y = Math.max(12, Math.min(h - 12, toy.y));
-        }
+        const kept = onLawn(toy);
+        if (kept.x !== toy.x) toy.vx = -toy.vx * 0.5;
+        if (kept.d !== toy.d) toy.vd = -toy.vd * 0.5;
+        Object.assign(toy, kept);
       }
 
-      // The dog: turn toward somewhere and run there
-      const head = (tx: number, ty: number, top: number) => {
+      // The dog: turn toward somewhere and run there, stopping `short` of it
+      // (its nose is ahead of its middle: it stops with its nose at a toy)
+      const head = (tx: number, td: number, top: number, short = 0) => {
         const dx = tx - dog.x;
-        const dy = ty - dog.y;
-        const dist = Math.hypot(dx, dy);
+        const dd = td - dog.d;
+        const dist = Math.hypot(dx, dd);
         if (dist > 3) {
-          let turn = Math.atan2(dy, dx) - dog.angle;
+          let turn = Math.atan2(dd, dx) - dog.angle;
           turn = Math.atan2(Math.sin(turn), Math.cos(turn));
           dog.angle += Math.max(-TURN * dt, Math.min(TURN * dt, turn));
         }
-        const want = Math.min(top, dist * 4);
+        const left = Math.max(0, dist - short);
+        const want = Math.min(top, left * 4);
         dog.speed += (want - dog.speed) * Math.min(1, dt * 5);
-        const stepLen = Math.min(dist, dog.speed * dt);
+        const stepLen = Math.min(left, dog.speed * dt);
         dog.x += Math.cos(dog.angle) * stepLen;
-        dog.y += Math.sin(dog.angle) * stepLen;
+        dog.d += Math.sin(dog.angle) * stepLen;
         return dist;
       };
       if (dog.z > 0 || dog.vz > 0) {
@@ -212,9 +226,10 @@ export default function FetchGame() {
           dog.idle += dt;
           // Watch the toy if it's moving or in your hand; otherwise watch you
           const look = toy.held || (free() && !toy.still) ? toy : you;
-          const turn = Math.atan2(Math.sin(Math.atan2(look.y - dog.y, look.x - dog.x) - dog.angle), Math.cos(Math.atan2(look.y - dog.y, look.x - dog.x) - dog.angle));
+          const want = Math.atan2(look.d - dog.d, look.x - dog.x);
+          const turn = Math.atan2(Math.sin(want - dog.angle), Math.cos(want - dog.angle));
           dog.angle += Math.max(-4 * dt, Math.min(4 * dt, turn));
-          if (free() && toy.still && Math.hypot(toy.x - dog.x, toy.y - dog.y) > 130 && dog.idle > 1.5) dog.mode = "chasing";
+          if (free() && toy.still && Math.hypot(toy.x - dog.x, toy.d - dog.d) > 140 && dog.idle > 1.5) dog.mode = "chasing";
           if (dog.idle > 9 && Math.random() < dt * 0.25) say("woof?");
           break;
         }
@@ -224,14 +239,14 @@ export default function FetchGame() {
             break;
           }
           const lead = toy.still ? 0 : 0.2;
-          head(toy.x + toy.vx * lead, toy.y + toy.vy * lead, RUN);
-          const reach = Math.hypot(toy.x - m.x, toy.y - m.y);
+          head(toy.x + toy.vx * lead, toy.d + toy.vd * lead, RUN, toy.z > 8 ? 0 : MOUTH * DOG_SIZE - 6);
+          const reach = Math.hypot(toy.x - m.x, toy.d - m.d);
           // Coming past within reach and not too high: leap for it
-          if (toy.z > 12 && toy.z < 110 && reach < 60 && dog.z === 0 && toy.vz < 200) dog.vz = Math.sqrt(2 * DOG_GRAVITY * toy.z) * 0.9;
-          const caught = toy.z > 6 ? reach < 22 && Math.abs(toy.z - dog.z) < 30 : reach < 15 && dog.z === 0;
+          if (toy.z > 14 && toy.z < 120 && reach < 64 && dog.z === 0 && toy.vz < 200) dog.vz = Math.sqrt(2 * DOG_GRAVITY * toy.z) * 0.85;
+          const caught = toy.z > 8 ? reach < 24 && Math.abs(toy.z - (dog.z + 18)) < 32 : reach < 16 && dog.z === 0;
           if (caught) {
             toy.mouth = true;
-            if (toy.z > 6) {
+            if (toy.z > 8) {
               say("woof!");
               dog.mode = "returning";
             } else {
@@ -248,10 +263,12 @@ export default function FetchGame() {
           break;
         }
         case "returning": {
-          if (head(you.x, you.y, TROT) < 46 && dog.z === 0) {
+          // To you, but no lower than just above the toy picker
+          const nearest = view.unproject(w / 2, h - 130).d;
+          if (head(you.x, Math.max(you.d, nearest), TROT) < 50 && dog.z === 0) {
             // Drop it at your feet
             toy.mouth = false;
-            Object.assign(toy, { x: m.x + Math.cos(dog.angle) * 6, y: m.y + Math.sin(dog.angle) * 6, z: 4, vx: 0, vy: 0, vz: 60, still: false });
+            Object.assign(toy, { x: m.x + Math.cos(dog.angle) * 8, d: m.d + Math.sin(dog.angle) * 8, z: 10, vx: 0, vd: 0, vz: 80, still: false });
             fetches++;
             if (fetches % 3 === 0) say(fetches % 6 === 0 ? "again!" : "woof!");
             dog.mode = "waiting";
@@ -260,8 +277,7 @@ export default function FetchGame() {
           break;
         }
       }
-      dog.x = Math.max(20, Math.min(w - 20, dog.x));
-      dog.y = Math.max(20, Math.min(h - 20, dog.y));
+      Object.assign(dog, onLawn(dog));
 
       pose.moving = dog.speed > 25 && dog.mode !== "waiting" && dog.mode !== "picking";
       pose.run += dt * dog.speed * 0.06;
@@ -270,38 +286,74 @@ export default function FetchGame() {
       pose.blink = now % 3800 < 140;
     };
 
-    const drawToy = (x: number, y: number, z: number) => {
-      // Its shadow, further off the higher it is (light from the top left)
-      ctx.fillStyle = "rgba(0,0,0,0.2)";
+    // Lying on the ground at (x, d), facing `angle`: what's drawn after this
+    // sits flat on the lawn, foreshortened by the view
+    const onGround = (x: number, d: number, z: number, angle: number, size: number) => {
+      const p = view.project(x, d, z);
+      ctx.translate(p.x, p.y);
+      ctx.scale(p.s * size, -p.s * size * view.squash);
+      ctx.rotate(angle);
+      return p;
+    };
+
+    const drawToy = () => {
+      const t = TOYS[kindRef.current];
+      // Its shadow on the grass, and the toy above it
+      const shadow = view.project(toy.x, toy.d);
+      ctx.fillStyle = "rgba(0,0,0,0.22)";
       ctx.beginPath();
-      ctx.ellipse(x + 3 + z * 0.35, y + 4 + z * 0.55, 9, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(shadow.x, shadow.y, 9 * shadow.s * (1 - Math.min(toy.z, 200) / 400), 9 * shadow.s * view.squash * 0.7, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(1 + z / 220, 1 + z / 220);
+      const p = view.project(toy.x, toy.d, toy.z + 6);
+      ctx.translate(p.x, p.y);
+      // A ball is round from any angle; flat toys tip with the lawn
+      if (kindRef.current === "ball") ctx.scale(p.s, p.s);
+      else ctx.scale(p.s, -p.s * (toy.z > 4 ? 0.85 : view.squash));
       ctx.rotate(toy.angle);
-      TOYS[kindRef.current].draw(ctx);
+      t.draw(ctx);
       ctx.restore();
     };
 
-    const draw = (now: number) => {
-      const dt = Math.min(now - last, 50) / 1000;
-      last = now;
-      step(dt, now);
-      ctx.drawImage(lawn, 0, 0, w, h);
-
-      const toyLow = free() && toy.z < 20;
-      if (toyLow) drawToy(toy.x, toy.y, toy.z);
-
-      // The dog, its shadow, and anything in its mouth
+    const drawTheDog = () => {
+      // Shadow, paws on the grass, legs up to the body, then the body
+      const g = view.project(dog.x, dog.d);
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.beginPath();
-      ctx.ellipse(dog.x + 4 + dog.z * 0.35, dog.y + 6 + dog.z * 0.55, 30, 15, dog.angle, 0, Math.PI * 2);
+      ctx.ellipse(g.x, g.y, 30 * g.s * DOG_SIZE * (1 - Math.min(dog.z, 160) / 320), 14 * g.s * DOG_SIZE * view.squash, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      const lift = LEGS + dog.z;
       ctx.save();
-      ctx.translate(dog.x, dog.y);
-      ctx.rotate(dog.angle);
-      ctx.scale(1.2 + dog.z / 200, 1.2 + dog.z / 200);
+      onGround(dog.x, dog.d, dog.z, dog.angle, DOG_SIZE);
+      const feet = ctx.getTransform();
+      if (dog.z < 4) drawPaws(ctx, pose);
+      ctx.restore();
+      ctx.save();
+      onGround(dog.x, dog.d, lift, dog.angle, DOG_SIZE);
+      const body = ctx.getTransform();
+      ctx.restore();
+
+      // Legs: from each paw up to where it meets the body
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const dpr = Math.min(devicePixelRatio, 2);
+      ctx.strokeStyle = LEG_COLOUR;
+      ctx.lineCap = "round";
+      ctx.lineWidth = 5 * g.s * DOG_SIZE * dpr;
+      for (const paw of paws(pose)) {
+        if (!paw.front && pose.sit > 0.6) continue;
+        const a = feet.transformPoint(new DOMPoint(paw.x, paw.y));
+        const b = body.transformPoint(new DOMPoint(paw.x * 0.85, paw.y * 0.8));
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      onGround(dog.x, dog.d, lift, dog.angle, DOG_SIZE);
       const carried = TOYS[kindRef.current];
       drawDog(
         ctx,
@@ -315,38 +367,50 @@ export default function FetchGame() {
           : undefined,
       );
       ctx.restore();
+    };
 
-      if (!toyLow && !toy.mouth) drawToy(toy.x, toy.y, toy.z);
+    const draw = (now: number) => {
+      const dt = Math.min(now - last, 50) / 1000;
+      last = now;
+      step(dt, now);
+      ctx.drawImage(ground, 0, 0, w, h);
 
-      // Night settles over everything in the garden, the dog included
-      if (document.documentElement.dataset.theme !== "light") {
+      // Everything standing, far to near, so nearer things cover farther ones.
+      // A toy high in the air goes over everything.
+      const order: { d: number; draw: () => void }[] = things.map((t) => ({ d: t.d, draw: () => t.draw(ctx) }));
+      order.push({ d: dog.d, draw: drawTheDog });
+      if (!toy.mouth) order.push({ d: toy.z > 50 ? -1 : toy.d, draw: drawToy });
+      order.sort((a, b) => b.d - a.d);
+      for (const o of order) o.draw();
+
+      // Night settles over everything in the garden
+      if (night()) {
         ctx.fillStyle = "rgba(10, 16, 34, 0.25)";
         ctx.fillRect(0, 0, w, h);
       }
 
       // Speech bubble
       if (now < bubble.until) {
-        const bx = dog.x;
-        const by = dog.y - 46 - dog.z * 0.5;
+        const p = view.project(dog.x, dog.d, dog.z + 70);
         ctx.font = "600 13px ui-sans-serif, system-ui, sans-serif";
         const tw = ctx.measureText(bubble.text).width;
         ctx.fillStyle = "rgba(255,255,255,0.92)";
         ctx.beginPath();
-        ctx.roundRect(bx - tw / 2 - 8, by - 15, tw + 16, 24, 12);
+        ctx.roundRect(p.x - tw / 2 - 8, p.y - 15, tw + 16, 24, 12);
         ctx.fill();
         ctx.fillStyle = "#2a1d14";
         ctx.textAlign = "center";
-        ctx.fillText(bubble.text, bx, by + 2);
+        ctx.fillText(bubble.text, p.x, p.y + 2);
       }
 
       // How to play (until the first throw), and the tally
       ctx.font = "11px ui-monospace, monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
       ctx.shadowColor = "rgba(0,0,0,0.35)";
       ctx.shadowBlur = 4;
       if (!thrown) {
         ctx.textAlign = "center";
-        ctx.fillText("DRAG THE TOY AND LET GO · OR TAP WHERE TO THROW", w / 2, h * 0.36);
+        ctx.fillText("DRAG THE TOY AND LET GO · OR TAP WHERE TO THROW", w / 2, view.horizon + 40);
       }
       if (fetches) {
         ctx.textAlign = "right";
@@ -359,7 +423,7 @@ export default function FetchGame() {
     frame = requestAnimationFrame(draw);
 
     // A new season or light/dark repaints the garden
-    const watcher = new MutationObserver(paintLawn);
+    const watcher = new MutationObserver(paintGround);
     watcher.observe(document.documentElement, { attributes: true, attributeFilter: ["data-palette", "data-theme"] });
     addEventListener("pointerdown", onDown);
     addEventListener("pointermove", onMove, { passive: true });
@@ -386,7 +450,7 @@ export default function FetchGame() {
       <canvas
         ref={canvas}
         role="img"
-        aria-label="A garden seen from above, with a dog waiting for its toy"
+        aria-label="A garden, with a dog waiting for its toy"
         className="pointer-events-none fixed inset-0 z-[35] h-full w-full touch-none"
       />
       {/* Which toy to throw */}
