@@ -1,5 +1,16 @@
 [
   {
+    "name": "parley",
+    "description": "Push-based context sync between Claude Code sessions, so you stop re-explaining yourself to each chat. Each session publishes a short card about its work. When something changes in one chat, only the sessions whose card it affects get the update, labelled with a severity and whether the user said it or Claude inferred it, and the receiver triages it rather than obeying it. Privacy seals stop a chat sending or receiving, enforced in code. A Claude Code plugin in stdlib-only Python over an append-only JSONL ledger, with 40 unit tests and headless model-behaviour evals.",
+    "tech": [
+      "Python",
+      "Claude Code",
+      "LLM tooling",
+      "Agents"
+    ],
+    "github": "https://github.com/apoorvyadav1111/parley"
+  },
+  {
     "name": "DiceDB (Legacy)",
     "description": "Open-source maintainer of DiceDB, an in-memory database written in Go (Aug 2024 – Jan 2025). Contributed 40+ pull requests (9,000+ lines), from nested JSONPath fixes to Set, Hash and Bloom filter structures that added 35+ Redis-compatible commands, and reviewed 50+ pull requests from other contributors.",
     "tech": [
