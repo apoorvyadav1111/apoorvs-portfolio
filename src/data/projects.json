@@ -1,7 +1,7 @@
 [
   {
     "name": "parley",
-    "description": "Push-based context sync between Claude Code sessions, so you stop re-explaining yourself to each chat. Each session publishes a short card about its work. When something changes in one chat, only the sessions whose card it affects get the update, labelled with a severity and whether the user said it or Claude inferred it, and the receiver triages it rather than obeying it. Privacy seals stop a chat sending or receiving, enforced in code. A Claude Code plugin in stdlib-only Python over an append-only JSONL ledger, with 40 unit tests and headless model-behaviour evals.",
+    "description": "Push-based context sync between Claude Code sessions, so you stop re-explaining yourself to each chat. Each session publishes a short card about its work. When something changes in one chat, only the sessions whose card it affects get the update, labelled with a severity and whether the user said it or Claude inferred it, and the receiver triages it rather than obeying it. Privacy seals stop a chat sending or receiving, enforced in code. A Claude Code plugin in stdlib-only Python over an append-only JSONL ledger.",
     "tech": [
       "Python",
       "Claude Code",
