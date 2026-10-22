@@ -39,8 +39,9 @@ function parseFrontmatter(raw: string) {
   return { data, body: raw.slice(match[0].length) };
 }
 
-// Drafts are visible while developing locally, hidden in production builds.
-const showDrafts = process.env.NODE_ENV !== "production";
+// Drafts are visible while developing locally, hidden in production builds
+// …and on Vercel preview deployments (behind a login), so drafts can be checked there
+const showDrafts = process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview";
 
 function readPost(file: string): Post {
   const slug = file.replace(/\.md$/, "");

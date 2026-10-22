@@ -24,7 +24,7 @@ needs re-running to change their density.
 ## Blog posts
 
 1. `npm run post -- "Your post title"` creates `src/content/blog/your-post-title.md` as a draft.
-2. Write in Markdown. Drafts are visible locally but hidden on the live site.
+2. Write in Markdown. Drafts are visible locally and on the Vercel preview, but hidden on the live site.
 3. Delete the `draft: true` line to publish, then commit.
 
 ## Reading list
