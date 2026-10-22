@@ -3,7 +3,6 @@ title: Teaching my Claude sessions to keep each other up to date
 date: 2026-10-22
 summary: I kept repeating myself to every Claude chat I had open, so I built parley, a small ledger that sends each update only to the sessions it affects.
 tags: [ai, system-design]
-draft: true
 ---
 
 I usually have several Claude Code chats open, each on one track of a bigger effort. None of them knows what the others know. A date would move in one chat, and another would keep planning around the old one until I re-explained it or Claude went searching through files.
