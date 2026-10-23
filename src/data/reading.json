@@ -1,5 +1,16 @@
 [
   {
+    "title": "How Claude's text watermark works",
+    "url": "https://www.anthropic.com/news/claude-text-watermark",
+    "author": "Anthropic",
+    "date": "2026-10-22",
+    "summary": "Future Claude models will watermark the text they write, as part of complying with the EU AI Act: for low-stakes word choices, a secret key and the preceding words replace the usual random pick, so the text reads the same but anyone holding the key can estimate how likely it is that Claude was involved. It uses a version of Google DeepMind's SynthID-Text, adds no hidden characters or tokens, gets more confident on longer passages, survives light edits but not a full rewrite, and can't tell whether text came from a person or another AI. Detection is in private preview for groups such as regulators, researchers and fact-checkers, while images and files get C2PA content credentials instead.",
+    "tags": [
+      "ai",
+      "security"
+    ]
+  },
+  {
     "title": "Building effective agents",
     "url": "https://www.anthropic.com/engineering/building-effective-agents",
     "author": "Erik Schluntz, Barry Zhang",
