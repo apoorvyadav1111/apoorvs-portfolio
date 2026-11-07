@@ -1,7 +1,7 @@
 [
   {
     "name": "Agent Board",
-    "description": "A local Jira for AI coding agents, where you're the scrum master. A manager agent splits work into small, dependency-ordered cards, and workers ship one maintainable, human-reviewable PR per card under a changed-line budget. Watch it all on a live board. A Claude Code plugin in stdlib-only Python with SQLite and MCP.",
+    "description": "A local Jira for AI coding agents, where you're the scrum master. A manager agent splits work into small, dependency-ordered cards, and workers ship each card as one maintainable, human-reviewable PR in a GitHub stack, under a changed-line budget. Watch it all on a live board. A Claude Code plugin in stdlib-only Python with SQLite and MCP.",
     "tech": ["Python", "Claude Code", "MCP", "SQLite", "Agents"]
   },
   {
