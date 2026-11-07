@@ -1,5 +1,10 @@
 [
   {
+    "name": "Agent Board",
+    "description": "A local Jira for AI coding agents, built so their work lands as small, maintainable PRs a human can actually review. A manager agent turns a chat, Jira ticket or requirements doc into a requirements document and small, dependency-ordered cards, and worker subagents each deliver one composable commit or PR per card, through todo, in progress, tests, review and done. The server enforces the rules: a changed-line budget per card and a linked commit before review. The developer acts as scrum master, watching every project live on a read-only board and steering scope through change requests. A Claude Code plugin in stdlib-only Python: SQLite, an MCP server over stdio, and a loopback-only web UI, with secrets redacted before anything is stored.",
+    "tech": ["Python", "Claude Code", "MCP", "SQLite", "Agents"]
+  },
+  {
     "name": "parley",
     "description": "Push-based context sync between Claude Code sessions, so you stop re-explaining yourself to each chat. Each session publishes a short card about its work. When something changes in one chat, only the sessions whose card it affects get the update, labelled with a severity and whether the user said it or Claude inferred it, and the receiver triages it rather than obeying it. Privacy seals stop a chat sending or receiving, enforced in code. A Claude Code plugin in stdlib-only Python over an append-only JSONL ledger.",
     "tech": [
