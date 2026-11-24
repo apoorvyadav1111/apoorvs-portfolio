@@ -181,6 +181,23 @@ body::before {
   }
 }
 
+@keyframes reveal-assemble {
+  0% {
+    opacity: 0.01;
+    filter: brightness(2.2) blur(2px);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  40% {
+    opacity: 0.2;
+  }
+  60% {
+    opacity: 1;
+    filter: brightness(1.4) blur(0);
+  }
+}
+
 /* On page load: <span class="enter" style="--i: 2"> enters third */
 [data-motion] .enter {
   animation: var(--reveal) var(--motion-dur) var(--motion-ease) backwards;
@@ -550,4 +567,51 @@ body::before {
   filter: var(--photo-filter, none);
   border-radius: var(--theme-radius);
   max-width: 100%;
+}
+
+/* ---- Signal (src/themes/signal.ts, src/components/Signal.tsx) --------------
+   The cloud sits behind everything and the swarm canvas above; both only
+   show while the theme is on, and doodles keep the screen to themselves.
+   Surfaces are see-through in this theme, so they blur what's behind them.
+   A heading stays faint while its particles fly in, then fades up. */
+:root:not([data-palette="signal"]) :is(.signal-field, .signal-type),
+[data-doodle] :is(.signal-field, .signal-type) {
+  display: none;
+}
+/* The intro (src/components/signal/Intro.tsx) needs the theme and motion;
+   while it's on screen the header steps aside and "Skip intro" shows. */
+.signal-intro,
+.signal-skip {
+  display: none;
+}
+[data-palette="signal"][data-motion] .signal-intro {
+  display: block;
+}
+[data-palette="signal"][data-intro] .signal-skip {
+  display: block;
+}
+[data-palette="signal"] header {
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+[data-palette="signal"][data-intro] header {
+  opacity: 0;
+  pointer-events: none;
+}
+.signal-scroll-cue {
+  transform-origin: top;
+  animation: signal-cue 1.8s ease-in-out infinite;
+}
+@keyframes signal-cue {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+[data-palette="signal"] .bg-surface {
+  backdrop-filter: blur(10px);
+}
+[data-palette="signal"] [data-assembling] {
+  transition: opacity 0.45s ease-out;
+}
+[data-palette="signal"] [data-assembling]:not([data-assembled]) {
+  opacity: 0.01;
 }

@@ -48,8 +48,8 @@ export interface Motion {
   //   wipe: rises out of a mask · develop: fades in from a blur, like a print developing
   //   ink: inked in left to right, like a press roller
   //   fall: drifts down and settles, like a leaf · frost: thaws from a blur
-  //   bloom: opens up from small
-  reveal: "rise" | "misregister" | "wipe" | "develop" | "ink" | "fall" | "frost" | "bloom";
+  //   bloom: opens up from small · assemble: flickers on, like a display waking up
+  reveal: "rise" | "misregister" | "wipe" | "develop" | "ink" | "fall" | "frost" | "bloom" | "assemble";
   duration: number; // ms
   ease: string; // CSS timing function
   stagger: number; // ms between elements entering together

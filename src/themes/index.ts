@@ -18,8 +18,9 @@ import { harvest } from "./harvest";
 import { frost } from "./frost";
 import { bloom } from "./bloom";
 import { solstice } from "./solstice";
+import { signal } from "./signal";
 
-export const THEMES: Theme[] = [trail, riso, swiss, graphite, gazette, harvest, frost, bloom, solstice];
+export const THEMES: Theme[] = [trail, riso, swiss, graphite, gazette, signal, harvest, frost, bloom, solstice];
 export const DEFAULT_THEME = "trail";
 // What first-time visitors see: "dark", "light", or "system" (follow the device)
 export const DEFAULT_MODE: "light" | "dark" | "system" = "dark";

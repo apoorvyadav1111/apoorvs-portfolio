@@ -8,6 +8,7 @@ import projects from "@/data/projects.json";
 import { getAllPosts, formatDate } from "@/lib/posts";
 import { getPhotos } from "@/lib/photos";
 import HeroStatus from "@/components/HeroStatus";
+import Intro from "@/components/signal/Intro";
 
 function SectionHeading({
   index,
@@ -63,8 +64,11 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 sm:px-6">
+      {/* Signal theme only: the cloud tells the story first */}
+      <Intro />
+
       {/* Hero */}
-      <section className="pt-20 pb-24 sm:pt-28 sm:pb-32">
+      <section id="start" data-signal="monogram" className="pt-20 pb-24 sm:pt-28 sm:pb-32">
         <HeroStatus
           text={`${personal.currently} · ${personal.location}`}
           className="enter mb-8 font-mono text-xs uppercase tracking-widest text-muted"
@@ -109,7 +113,7 @@ export default function Home() {
       </section>
 
       {/* Experience */}
-      <section id="work" className="pb-28">
+      <section id="work" data-signal="network" className="pb-28">
         <SectionHeading index="01" title="Experience" />
         <ol className="divide-y divide-line">
           {work.map((job) => (
@@ -158,7 +162,7 @@ export default function Home() {
       </section>
 
       {/* Projects */}
-      <section id="projects" className="pb-28">
+      <section id="projects" data-signal="code" className="pb-28">
         <SectionHeading index="02" title="Projects" />
         <div className="grid gap-4 sm:grid-cols-2">
           {projects.map((project) => {
@@ -203,7 +207,7 @@ export default function Home() {
 
       {/* Writing */}
       {posts.length > 0 && (
-        <section className="pb-28">
+        <section data-signal="book" className="pb-28">
           <SectionHeading
             index="03"
             title="Writing"
@@ -246,7 +250,7 @@ export default function Home() {
 
       {/* Photographs */}
       {cover && (
-        <section className="pb-28">
+        <section data-signal="globe" className="pb-28">
           <SectionHeading index="04" title="Photographs" />
           <Link
             href="/photos"
