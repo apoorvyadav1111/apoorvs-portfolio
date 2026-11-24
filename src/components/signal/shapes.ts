@@ -273,46 +273,67 @@ async function text(n: number, lines: string[], aspect: number, screenH: number)
   for (let i = 3; i < data.length; i += 4) if (data[i] > 110) lit++;
   const k = Math.min((2 * 0.82 * aspect) / 0.81 / W, (2 * 0.6) / 0.81 / H);
   const r = rng(10);
-  // Dots on an even grid over the letters, rather than dropped at random
-  // (which clumps and leaves gaps, and reads as grain), DOT_PX apart on
-  // screen whatever its size. Several points share each dot, so every dot is
-  // distinct and bright, like a dot-matrix sign, and they come apart again
-  // when the text goes. Closer together where the smallest line would
-  // otherwise get too few dots to read (on a phone), and never more dots
-  // than points.
+  // One particle per spot, spread evenly over the letters (dropped purely
+  // at random they clump and leave gaps, and read as grain) but each loose
+  // within its spot, so it's a swarm rather than a grid. They sit GAP_PX
+  // apart on screen, closer where the smallest line would get too few to
+  // read (on a phone). The points left over hang around the words as a
+  // faint haze; they're the only ones off the page plane (z ≠ 0), which is
+  // how field.ts tells them apart.
   const perPx = (2.6 / 3.2) * (screenH / 2); // screen px per unit, centred at scale 1
   const smallest = Math.min(...rows.map((row) => row.size));
-  const step = Math.max(Math.min(DOT_PX / perPx / k, smallest / 14), Math.sqrt(lit / n) * 1.03);
+  const step = Math.max(Math.min(GAP_PX / perPx / k, smallest / 16), Math.sqrt(lit / n) * 1.05);
   const pts: number[] = [];
-  // A dot goes wherever its patch of the grid touches a letter, so strokes
-  // thinner than the spacing don't break up
+  // A spot counts wherever it touches a letter, so thin strokes don't break up
   const q = step * 0.3;
   const near = (x: number, y: number) =>
     on(x, y) || on(x - q, y) || on(x + q, y) || on(x, y - q) || on(x, Math.min(H - 1, y + q));
-  for (let y = step / 2; y < H; y += step) for (let x = step / 2; x < W; x += step) if (near(x, y)) pts.push(x, y);
+  for (let y = step / 2; y < H; y += step)
+    for (let x = step / 2; x < W; x += step) {
+      if (!near(x, y)) continue;
+      let px = x;
+      let py = y;
+      for (let tries = 0; tries < 3; tries++) {
+        const jx = x + (r() - 0.5) * step * 0.9;
+        const jy = y + (r() - 0.5) * step * 0.9;
+        if (on(jx, Math.min(H - 1, Math.max(0, jy)))) {
+          px = jx;
+          py = jy;
+          break;
+        }
+      }
+      pts.push(px, py);
+    }
   const sites = Math.min(n, pts.length / 2);
-  const order = Array.from({ length: pts.length / 2 }, (_, i) => i);
+  // Which points land on letters is shuffled, so a morph is a swarm
+  const order = Array.from({ length: n }, (_, i) => i);
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(r() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
   const out = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) {
-    const j = order[i % sites] * 2;
-    out[i * 3] = (pts[j] - W / 2) * k;
-    out[i * 3 + 1] = -(pts[j + 1] - H / 2) * k;
-    out[i * 3 + 2] = 0;
-  }
-  textGap.set(out, { gap: step * k, stack: n / sites });
+  order.forEach((i, rank) => {
+    if (rank < sites) {
+      out[i * 3] = (pts[rank * 2] - W / 2) * k;
+      out[i * 3 + 1] = -(pts[rank * 2 + 1] - H / 2) * k;
+      out[i * 3 + 2] = 0;
+    } else {
+      const j = Math.floor(r() * sites) * 2;
+      out[i * 3] = (pts[j] - W / 2) * k + gauss(r) * 0.07;
+      out[i * 3 + 1] = -(pts[j + 1] - H / 2) * k + gauss(r) * 0.05;
+      const z = gauss(r) * 0.12;
+      out[i * 3 + 2] = z + (z < 0 ? -0.002 : 0.002);
+    }
+  });
+  textGap.set(out, step * k);
   return out;
 }
 
-// How far apart text's dots are on screen, in CSS px
-const DOT_PX = 5;
+// How far apart the particles on text sit on screen, in CSS px
+const GAP_PX = 2.8;
 
-// How far apart a text shape's dots are and how many points share each, so
-// field.ts can size and light them
-export const textGap = new WeakMap<Float32Array, { gap: number; stack: number }>();
+// How far apart a text shape's particles are, so field.ts can size them
+export const textGap = new WeakMap<Float32Array, number>();
 
 // A soft sphere with rings, for pages without a shape of their own
 function orb(n: number) {

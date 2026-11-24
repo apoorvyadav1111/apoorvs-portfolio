@@ -5,10 +5,9 @@ import { usePathname } from "next/navigation";
 import type { Shape } from "./signal/shapes";
 import type { Field } from "./signal/field";
 
-// The Signal theme's moving parts (src/themes/signal.ts): the point cloud
-// behind the page (./signal/field.ts) and headings that assemble out of
-// particles (./signal/type.ts). This file is all that loads with the other
-// themes; the rest is fetched the first time Signal is switched on.
+// The Signal theme's moving part (src/themes/signal.ts): the point cloud
+// behind the page (./signal/field.ts). This file is all that loads with the
+// other themes; the rest is fetched the first time Signal is switched on.
 //
 // Which shape the cloud takes: on the home page, the section nearest the
 // middle of the screen says so with `data-signal="<shape>"`; elsewhere it
@@ -30,7 +29,6 @@ function pageShape(path: string): Shape {
 
 export default function Signal() {
   const fieldCanvas = useRef<HTMLCanvasElement>(null);
-  const typeCanvas = useRef<HTMLCanvasElement>(null);
   const field = useRef<Field | null>(null);
   const pathname = usePathname();
   const path = useRef(pathname);
@@ -94,7 +92,6 @@ export default function Signal() {
 
   useEffect(() => {
     const root = document.documentElement;
-    let stopType: (() => void) | null = null;
     let starting = false;
     let alive = true;
 
@@ -105,8 +102,6 @@ export default function Signal() {
         delete root.dataset.intro;
         field.current?.stop();
         field.current = null;
-        stopType?.();
-        stopType = null;
         return;
       }
       if (field.current) {
@@ -120,14 +115,6 @@ export default function Signal() {
         const at = introAt();
         field.current = at ? startField(fieldCanvas.current!, at.steps[0], true, motionOn()) : startField(fieldCanvas.current!, pick.current(), false, motionOn());
         update.current();
-      }
-      // Headings only assemble when things are allowed to move
-      if (motionOn() && !stopType) {
-        const { startType } = await import("./signal/type");
-        if (alive && root.dataset.palette === "signal" && !stopType) stopType = startType(typeCanvas.current!);
-      } else if (!motionOn() && stopType) {
-        stopType();
-        stopType = null;
       }
     };
     sync();
@@ -151,7 +138,6 @@ export default function Signal() {
       cancelAnimationFrame(queued);
       field.current?.stop();
       field.current = null;
-      stopType?.();
       delete root.dataset.intro;
     };
   }, []);
@@ -162,10 +148,5 @@ export default function Signal() {
     return () => cancelAnimationFrame(id);
   }, [pathname]);
 
-  return (
-    <>
-      <canvas ref={fieldCanvas} aria-hidden className="signal-field pointer-events-none fixed inset-0 -z-10 h-full w-full" />
-      <canvas ref={typeCanvas} aria-hidden className="signal-type pointer-events-none fixed inset-0 z-20 h-full w-full" />
-    </>
-  );
+  return <canvas ref={fieldCanvas} aria-hidden className="signal-field pointer-events-none fixed inset-0 -z-10 h-full w-full" />;
 }

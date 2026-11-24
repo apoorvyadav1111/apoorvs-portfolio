@@ -570,12 +570,11 @@ body::before {
 }
 
 /* ---- Signal (src/themes/signal.ts, src/components/Signal.tsx) --------------
-   The cloud sits behind everything and the swarm canvas above; both only
-   show while the theme is on, and doodles keep the screen to themselves.
-   Surfaces are see-through in this theme, so they blur what's behind them.
-   A heading stays faint while its particles fly in, then fades up. */
-:root:not([data-palette="signal"]) :is(.signal-field, .signal-type),
-[data-doodle] :is(.signal-field, .signal-type) {
+   The cloud sits behind everything; it only shows while the theme is on,
+   and doodles keep the screen to themselves. Surfaces are see-through in
+   this theme, so they blur what's behind them. */
+:root:not([data-palette="signal"]) .signal-field,
+[data-doodle] .signal-field {
   display: none;
 }
 /* The intro (src/components/signal/Intro.tsx) needs the theme and motion;
@@ -608,10 +607,4 @@ body::before {
 }
 [data-palette="signal"] .bg-surface {
   backdrop-filter: blur(10px);
-}
-[data-palette="signal"] [data-assembling] {
-  transition: opacity 0.45s ease-out;
-}
-[data-palette="signal"] [data-assembling]:not([data-assembled]) {
-  opacity: 0.01;
 }

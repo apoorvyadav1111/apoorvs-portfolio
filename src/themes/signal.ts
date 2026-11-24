@@ -2,8 +2,8 @@ import type { Theme } from "./types";
 
 // Hi-tech and dark: a cloud of glowing points behind the page reshapes itself
 // for each section as you scroll (a monogram, a network, brackets, a book, the
-// globe), and headings assemble out of particles as they arrive. Both live in
-// src/components/signal and only load while this theme is on.
+// globe). It lives in src/components/signal and only loads while this theme
+// is on.
 export const signal: Theme = {
   id: "signal",
   name: "Signal",
