@@ -174,7 +174,9 @@ async function main() {
   }
 
   if (added.length > 0) {
-    // New photos go first; reorder the entries in photos.json to change the gallery order
+    // New photos go first, newest taken first (undated ones last); reorder the
+    // entries in photos.json to change the gallery order
+    added.sort((a, b) => (b.taken ?? "").localeCompare(a.taken ?? ""));
     fs.writeFileSync(MANIFEST, JSON.stringify([...added, ...manifest], null, 2) + "\n");
     console.log(`\nAdded ${added.length} photo(s). Next: set title/location in ${MANIFEST}, then commit.`);
   }
