@@ -225,9 +225,9 @@ function entity(n: number) {
 // wrap. Fits within the area a centred cloud fills on this screen: clip
 // space is x·0.81/aspect, y·0.81 at scale 1 (see field.ts), and the text
 // takes up to 82% of the width and 60% of the height, above any caption.
-async function text(n: number, lines: string[], aspect: number) {
+async function text(n: number, lines: string[], aspect: number, screenH: number) {
   const big = await font("--font-space-grotesk", 600, 140);
-  const small = await font("--font-space-grotesk", 400, 70);
+  const small = await font("--font-space-grotesk", 500, 70);
   const wrapAt = aspect > 1.2 ? 1500 : Math.max(720, 1500 * (aspect / 1.2));
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d", { willReadFrequently: true })!;
@@ -268,20 +268,51 @@ async function text(n: number, lines: string[], aspect: number) {
     y += row.size * (i === 0 ? 1.1 : gap);
   });
   const data = ctx.getImageData(0, 0, W, H).data;
-  const lit: number[] = [];
-  for (let py = 0; py < H; py++) for (let px = 0; px < W; px++) if (data[(py * W + px) * 4 + 3] > 110) lit.push(px, py);
+  const on = (x: number, y: number) => data[(Math.floor(y) * W + Math.floor(x)) * 4 + 3] > 110;
+  let lit = 0;
+  for (let i = 3; i < data.length; i += 4) if (data[i] > 110) lit++;
   const k = Math.min((2 * 0.82 * aspect) / 0.81 / W, (2 * 0.6) / 0.81 / H);
   const r = rng(10);
-  const out = new Float32Array(n * 3);
-  const count = lit.length / 2;
-  for (let i = 0; i < n; i++) {
-    const j = Math.floor(r() * count) * 2;
-    out[i * 3] = (lit[j] + r() - W / 2) * k;
-    out[i * 3 + 1] = -(lit[j + 1] + r() - H / 2) * k;
-    out[i * 3 + 2] = gauss(r) * 0.015;
+  // Dots on an even grid over the letters, rather than dropped at random
+  // (which clumps and leaves gaps, and reads as grain), DOT_PX apart on
+  // screen whatever its size. Several points share each dot, so every dot is
+  // distinct and bright, like a dot-matrix sign, and they come apart again
+  // when the text goes. Closer together where the smallest line would
+  // otherwise get too few dots to read (on a phone), and never more dots
+  // than points.
+  const perPx = (2.6 / 3.2) * (screenH / 2); // screen px per unit, centred at scale 1
+  const smallest = Math.min(...rows.map((row) => row.size));
+  const step = Math.max(Math.min(DOT_PX / perPx / k, smallest / 14), Math.sqrt(lit / n) * 1.03);
+  const pts: number[] = [];
+  // A dot goes wherever its patch of the grid touches a letter, so strokes
+  // thinner than the spacing don't break up
+  const q = step * 0.3;
+  const near = (x: number, y: number) =>
+    on(x, y) || on(x - q, y) || on(x + q, y) || on(x, y - q) || on(x, Math.min(H - 1, y + q));
+  for (let y = step / 2; y < H; y += step) for (let x = step / 2; x < W; x += step) if (near(x, y)) pts.push(x, y);
+  const sites = Math.min(n, pts.length / 2);
+  const order = Array.from({ length: pts.length / 2 }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(r() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
   }
+  const out = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const j = order[i % sites] * 2;
+    out[i * 3] = (pts[j] - W / 2) * k;
+    out[i * 3 + 1] = -(pts[j + 1] - H / 2) * k;
+    out[i * 3 + 2] = 0;
+  }
+  textGap.set(out, { gap: step * k, stack: n / sites });
   return out;
 }
+
+// How far apart text's dots are on screen, in CSS px
+const DOT_PX = 5;
+
+// How far apart a text shape's dots are and how many points share each, so
+// field.ts can size and light them
+export const textGap = new WeakMap<Float32Array, { gap: number; stack: number }>();
 
 // A soft sphere with rings, for pages without a shape of their own
 function orb(n: number) {
@@ -331,13 +362,14 @@ const BUILDERS: Record<Shape, (n: number) => Float32Array | Promise<Float32Array
 
 const cache = new Map<string, Promise<Float32Array>>();
 
-// Text depends on the screen's shape, so it's cached per (rounded) aspect
-export function buildShape(shape: Shape, n: number, aspect: number) {
+// Text depends on the screen's shape and size, so it's cached per (rounded) both
+export function buildShape(shape: Shape, n: number, aspect: number, screenH: number) {
   const a = Math.round(aspect * 10) / 10;
-  const key = isText(shape) ? `${shape}@${a}:${n}` : `${shape}:${n}`;
+  const sh = Math.round(screenH / 50) * 50;
+  const key = isText(shape) ? `${shape}@${a}x${sh}:${n}` : `${shape}:${n}`;
   if (!cache.has(key)) {
     const make = isText(shape)
-      ? text(n, shape.slice(5).split("|"), a)
+      ? text(n, shape.slice(5).split("|"), a, sh)
       : Promise.resolve((BUILDERS[shape] ?? BUILDERS.orb)(n));
     cache.set(key, make);
   }

@@ -16,7 +16,7 @@
 // With motion off (reduced motion or the console), it draws one still frame
 // whenever the shape changes, and nothing in between.
 
-import { buildShape, isText, type Shape } from "./shapes";
+import { buildShape, textGap, isText, type Shape } from "./shapes";
 
 const MORPH_MS = 1700;
 const SPREAD = 0.45; // how far apart the first and last points set off, as a fraction of the morph
@@ -37,7 +37,11 @@ uniform float uAspect;
 uniform vec2 uCenter;
 uniform float uScale;
 uniform float uSize;
+uniform float uCrispFrom; // 1 when that end is text: steady, even dots
+uniform float uCrispTo;
+uniform float uTextSize; // text dots' size, as a multiple of the usual
 varying float vGlow;
+varying float vCrisp;
 varying float vDepth;
 
 // The entity's churn: every point orbits at its own speed
@@ -65,8 +69,10 @@ void main() {
     float burst = step(0.985, fract(sin(tick * 3.1 + aSeed.w * 91.7) * 4375.85));
     pos += jitter * entity * (0.012 + burst * 0.09);
   }
-  // Breathing
-  pos += aSeed.yzw * 0.01 * sin(uTime * 0.9 + aSeed.x * 40.0);
+  // Breathing (barely, once it's spelling something)
+  // (only while settled on a letter: in flight, points are on their own again)
+  float crisp = mix(uCrispFrom, uCrispTo, p) * (1.0 - smoothstep(0.02, 0.2, min(p, 1.0 - p)));
+  pos += aSeed.yzw * 0.01 * (1.0 - crisp) * sin(uTime * 0.9 + aSeed.x * 40.0);
 
   float cy = cos(uTurn.x), sy = sin(uTurn.x), cp = cos(uTurn.y), sp = sin(uTurn.y);
   pos = vec3(pos.x * cy + pos.z * sy, pos.y, -pos.x * sy + pos.z * cy);
@@ -85,8 +91,10 @@ void main() {
   clip += (d / max(r, 1e-4)) * push * 0.035 * vec2(1.0 / uAspect, 1.0);
 
   gl_Position = vec4(clip, 0.0, 1.0);
-  float twinkle = 0.65 + 0.35 * sin(uTime * 2.3 + aSeed.x * 97.0);
-  gl_PointSize = uSize * (3.2 / w) * (0.7 + 0.6 * fract(aSeed.x * 13.0));
+  float twinkle = mix(0.65 + 0.35 * sin(uTime * 2.3 + aSeed.x * 97.0), 1.0, crisp);
+  float vary = mix(0.7 + 0.6 * fract(aSeed.x * 13.0), 1.0, crisp);
+  gl_PointSize = uSize * (3.2 / w) * vary * mix(1.0, uTextSize, crisp);
+  vCrisp = crisp;
   vGlow = twinkle * (1.0 + push * 1.5) * (0.85 + 0.4 * sin(p * 3.14159));
   vDepth = clamp((pos.z + 1.0) * 0.5, 0.0, 1.0);
 }`;
@@ -97,16 +105,27 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform float uAlpha;
 uniform float uDepthFade; // 0–1: how much the far side fades, for a sense of depth
+uniform float uStack; // points sharing each text dot
+uniform float uAdd; // 1 when blending adds light (dark), 0 for ink (light)
 varying float vGlow;
 varying float vDepth;
+varying float vCrisp;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
   float d = length(c);
   if (d > 0.5) discard;
-  // A bright core with a soft edge
-  float a = smoothstep(0.5, 0.12, d);
+  // A bright core with a soft edge; text gets solid dots with a crisp edge,
+  // in the accent leaning a little toward the text colour
+  float a = mix(smoothstep(0.5, 0.12, d), smoothstep(0.5, 0.36, d), vCrisp);
   float depth = mix(1.0, 0.25 + 0.75 * vDepth * vDepth, uDepthFade);
-  gl_FragColor = vec4(mix(uColorB, uColorA, vDepth), a * vGlow * uAlpha * depth);
+  vec3 col = mix(uColorB, uColorA, vDepth);
+  float alpha = a * vGlow * uAlpha * depth;
+  // The points stacked on one text dot add up to exactly one dot in the
+  // accent: with k of them, each at 1/√k (light adds up its colour times its
+  // alpha, and its alpha times itself), so dots look the same on any screen
+  float share = inversesqrt(uStack);
+  vec3 ink = mix(uColorA, uColorB, mix(0.35, 0.2, uAdd)) * mix(1.0, share, uAdd);
+  gl_FragColor = vec4(mix(col, ink, vCrisp), mix(alpha, a * share * min(1.0, uAlpha + 0.05), vCrisp));
 }`;
 
 export interface Field {
@@ -153,6 +172,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     t: u("uT"), time: u("uTime"), swirlFrom: u("uSwirlFrom"), swirlTo: u("uSwirlTo"), detour: u("uDetour"),
     turn: u("uTurn"), mouse: u("uMouse"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
     size: u("uSize"), a: u("uColorA"), b: u("uColorB"), alpha: u("uAlpha"), depthFade: u("uDepthFade"),
+    crispFrom: u("uCrispFrom"), crispTo: u("uCrispTo"), textSize: u("uTextSize"), stack: u("uStack"), add: u("uAdd"),
   };
 
   // Per-point randomness
@@ -201,6 +221,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
 
   let w = 0;
   let h = 0;
+  let dpr = 1;
+  let baseSize = 2.4;
   let stage = firstStage;
   // What the buffers hold: from → to, and whether each end swirls
   let pair: { a: Shape | null; b: Shape | null } = { a: null, b: null };
@@ -245,14 +267,14 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
         cx: 0,
         cy: text ? 0.1 : 0.06,
         scale: text ? 1 : Math.min(0.78, 0.7 * aspect),
-        alpha: text ? (colors.dark ? 0.95 : 0.9) : current === "globe" ? 1.1 : colors.dark ? 0.75 : 0.8,
+        alpha: text ? (colors.dark ? 0.95 : 0.9) : current === "globe" ? 1.1 : colors.dark ? 0.75 : 0.64,
       };
     }
     return {
       cx: wide ? 0.38 : 0,
       cy: wide ? 0 : 0.05,
       scale: wide ? Math.min(1.5, (h / w) * 2.1) : Math.min(1.3, (h / w) * 1.7),
-      alpha: colors.dark ? (wide ? 0.3 : 0.18) : wide ? 0.4 : 0.25,
+      alpha: colors.dark ? (wide ? 0.3 : 0.18) : wide ? 0.16 : 0.07,
     };
   }
 
@@ -289,8 +311,10 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.clear(gl!.COLOR_BUFFER_BIT);
     gl!.enable(gl!.BLEND);
     // Light adds up into a glow on dark; on light it's ink, layered normally
+    // (on light, the canvas's own alpha builds up properly too, so dots
+    // stacked on a letter end up solid)
     if (colors.dark) gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
-    else gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
+    else gl!.blendFuncSeparate(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA, gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
     gl!.uniform1f(U.t, t);
     gl!.uniform1f(U.time, time);
     gl!.uniform1f(U.swirlFrom, motion && swirlFrom ? 1 : 0);
@@ -305,6 +329,14 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.uniform3fv(U.b, colors.b);
     gl!.uniform1f(U.alpha, ease.alpha);
     gl!.uniform1f(U.depthFade, text ? 0 : current === "globe" ? 1 : 0.6);
+    // Text dots sized to all but touch their neighbours on screen
+    const info = textGap.get(t < 0.5 && scrubbing ? from : to) ?? textGap.get(from) ?? textGap.get(to);
+    const gapPx = info ? info.gap * ease.scale * (2.6 / 3.2) * (h / 2) * dpr : 0;
+    gl!.uniform1f(U.stack, info?.stack ?? 1);
+    gl!.uniform1f(U.add, colors.dark ? 1 : 0);
+    gl!.uniform1f(U.crispFrom, textGap.has(from) ? 1 : 0);
+    gl!.uniform1f(U.crispTo, textGap.has(to) ? 1 : 0);
+    gl!.uniform1f(U.textSize, gapPx ? Math.min(6, Math.max(1, (gapPx * (colors.dark ? 0.72 : 0.82)) / baseSize)) : 1);
     gl!.drawArrays(gl!.POINTS, 0, N);
   }
 
@@ -340,7 +372,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   // Morph on its own to `shape`, from wherever the points are now
   async function morphTo(shape: Shape, mine: number) {
     heading = shape;
-    const target = await buildShape(shape, N, w / h);
+    const target = await buildShape(shape, N, w / h, h);
     if (mine !== token) return false;
     const now = performance.now();
     from = snapshot(now);
@@ -379,7 +411,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       if (wait) await new Promise((r) => setTimeout(r, wait));
       if (mine !== token) return;
     }
-    const [fa, fb] = await Promise.all([buildShape(a, N, w / h), buildShape(b, N, w / h)]);
+    const [fa, fb] = await Promise.all([buildShape(a, N, w / h, h), buildShape(b, N, w / h, h)]);
     if (mine !== token) return;
     from = fa;
     to = fb;
@@ -393,16 +425,18 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   }
 
   const resize = () => {
-    const dpr = Math.min(devicePixelRatio || 1, small ? 1.5 : 2);
+    dpr = Math.min(devicePixelRatio || 1, small ? 1.5 : 2);
     const aspectBefore = w / h;
+    const hBefore = h;
     w = innerWidth;
     h = innerHeight;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform1f(U.size, (small ? 2.3 : 2.4) * dpr);
+    baseSize = (small ? 2.3 : 2.4) * dpr;
+    gl.uniform1f(U.size, baseSize);
     // Text is laid out for the screen's shape; lay it out again
-    if (Math.abs(aspectBefore - w / h) > 0.05) {
+    if (Math.abs(aspectBefore - w / h) > 0.05 || Math.abs(hBefore - h) > h * 0.25) {
       if (scrubbing && pair.a && pair.b && (isText(pair.a) || isText(pair.b))) {
         const { a, b } = pair;
         pair = { a: null, b: null };
