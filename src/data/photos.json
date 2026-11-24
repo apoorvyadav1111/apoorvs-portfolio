@@ -1,5 +1,131 @@
 [
   {
+    "src": "/photos/img-7124.jpg",
+    "title": "Steps down the headlands",
+    "location": "Marin Headlands, California",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/13699s · ISO 80",
+    "taken": "2026-07-11",
+    "coords": [
+      37.83,
+      -122.5
+    ]
+  },
+  {
+    "src": "/photos/img-6851.jpg",
+    "title": "Trillium Falls",
+    "location": "Redwood National Park",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/60s · ISO 320",
+    "taken": "2026-07-04",
+    "coords": [
+      41.32,
+      -124.05
+    ]
+  },
+  {
+    "src": "/photos/img-6874.jpg",
+    "title": "Fog over the 101",
+    "location": "Del Norte Coast Redwoods",
+    "width": 2480,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/138s · ISO 64",
+    "taken": "2026-07-04",
+    "coords": [
+      41.64,
+      -124.11
+    ]
+  },
+  {
+    "src": "/photos/img-6701.jpg",
+    "title": "Vernal Fall",
+    "location": "Yosemite National Park",
+    "width": 2560,
+    "height": 2543,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/1.8 · 1/3623s · ISO 80",
+    "taken": "2026-06-27",
+    "coords": [
+      37.73,
+      -119.54
+    ]
+  },
+  {
+    "src": "/photos/img-4305.jpg",
+    "title": "Evening along the bay",
+    "location": "Sausalito, California",
+    "width": 2560,
+    "height": 1859,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/681s · ISO 32",
+    "taken": "2025-09-06",
+    "coords": [
+      37.85,
+      -122.48
+    ]
+  },
+  {
+    "src": "/photos/img-3968.jpg",
+    "title": "Red ice plant on the cliffs",
+    "location": "Garrapata, Big Sur",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/677s · ISO 32",
+    "taken": "2025-05-24",
+    "coords": [
+      36.42,
+      -121.91
+    ]
+  },
+  {
+    "src": "/photos/img-3224.jpg",
+    "title": "Snow on the far shore",
+    "location": "Lake Tahoe",
+    "width": 2560,
+    "height": 1440,
+    "camera": "iPhone 14 Pro",
+    "settings": "77mm · ƒ/2.8 · 1/1340s · ISO 32",
+    "taken": "2024-12-30",
+    "coords": [
+      38.95,
+      -119.96
+    ]
+  },
+  {
+    "src": "/photos/img-2642.jpg",
+    "title": "Holiday lights",
+    "location": "San Jose, California",
+    "width": 2560,
+    "height": 1920,
+    "camera": "iPhone 14 Pro",
+    "settings": "48mm · ƒ/1.8 · 1/60s · ISO 80",
+    "taken": "2024-12-19",
+    "coords": [
+      37.35,
+      -121.92
+    ]
+  },
+  {
+    "src": "/photos/img-0177.jpg",
+    "title": "A single snowflake",
+    "location": "Binghamton, New York",
+    "width": 1920,
+    "height": 2560,
+    "camera": "iPhone 14 Pro",
+    "settings": "24mm · ƒ/2.2 · 1/7s · ISO 1250",
+    "taken": "2022-12-19",
+    "coords": [
+      42.1,
+      -75.91
+    ]
+  },
+  {
     "src": "/photos/pfeiffer-beach-sunset.jpg",
     "title": "Pfeiffer Beach",
     "location": "Big Sur, California",
@@ -627,132 +753,6 @@
     "coords": [
       30.25,
       78.75
-    ]
-  },
-  {
-    "src": "/photos/img-0177.jpg",
-    "title": "A single snowflake",
-    "location": "Binghamton, New York",
-    "width": 1920,
-    "height": 2560,
-    "camera": "iPhone 14 Pro",
-    "settings": "24mm · ƒ/2.2 · 1/7s · ISO 1250",
-    "taken": "2022-12-19",
-    "coords": [
-      42.1,
-      -75.91
-    ]
-  },
-  {
-    "src": "/photos/img-2642.jpg",
-    "title": "Holiday lights",
-    "location": "San Jose, California",
-    "width": 2560,
-    "height": 1920,
-    "camera": "iPhone 14 Pro",
-    "settings": "48mm · ƒ/1.8 · 1/60s · ISO 80",
-    "taken": "2024-12-19",
-    "coords": [
-      37.35,
-      -121.92
-    ]
-  },
-  {
-    "src": "/photos/img-3224.jpg",
-    "title": "Snow on the far shore",
-    "location": "Lake Tahoe",
-    "width": 2560,
-    "height": 1440,
-    "camera": "iPhone 14 Pro",
-    "settings": "77mm · ƒ/2.8 · 1/1340s · ISO 32",
-    "taken": "2024-12-30",
-    "coords": [
-      38.95,
-      -119.96
-    ]
-  },
-  {
-    "src": "/photos/img-3968.jpg",
-    "title": "Red ice plant on the cliffs",
-    "location": "Garrapata, Big Sur",
-    "width": 2560,
-    "height": 1920,
-    "camera": "iPhone 14 Pro",
-    "settings": "77mm · ƒ/2.8 · 1/677s · ISO 32",
-    "taken": "2025-05-24",
-    "coords": [
-      36.42,
-      -121.91
-    ]
-  },
-  {
-    "src": "/photos/img-4305.jpg",
-    "title": "Evening along the bay",
-    "location": "Sausalito, California",
-    "width": 2560,
-    "height": 1859,
-    "camera": "iPhone 14 Pro",
-    "settings": "77mm · ƒ/2.8 · 1/681s · ISO 32",
-    "taken": "2025-09-06",
-    "coords": [
-      37.85,
-      -122.48
-    ]
-  },
-  {
-    "src": "/photos/img-6701.jpg",
-    "title": "Vernal Fall",
-    "location": "Yosemite National Park",
-    "width": 2560,
-    "height": 2543,
-    "camera": "iPhone 14 Pro",
-    "settings": "24mm · ƒ/1.8 · 1/3623s · ISO 80",
-    "taken": "2026-06-27",
-    "coords": [
-      37.73,
-      -119.54
-    ]
-  },
-  {
-    "src": "/photos/img-6851.jpg",
-    "title": "Trillium Falls",
-    "location": "Redwood National Park",
-    "width": 1920,
-    "height": 2560,
-    "camera": "iPhone 14 Pro",
-    "settings": "24mm · ƒ/1.8 · 1/60s · ISO 320",
-    "taken": "2026-07-04",
-    "coords": [
-      41.32,
-      -124.05
-    ]
-  },
-  {
-    "src": "/photos/img-6874.jpg",
-    "title": "Fog over the 101",
-    "location": "Del Norte Coast Redwoods",
-    "width": 2480,
-    "height": 2560,
-    "camera": "iPhone 14 Pro",
-    "settings": "24mm · ƒ/1.8 · 1/138s · ISO 64",
-    "taken": "2026-07-04",
-    "coords": [
-      41.64,
-      -124.11
-    ]
-  },
-  {
-    "src": "/photos/img-7124.jpg",
-    "title": "Steps down the headlands",
-    "location": "Marin Headlands, California",
-    "width": 1920,
-    "height": 2560,
-    "camera": "iPhone 14 Pro",
-    "settings": "24mm · ƒ/1.8 · 1/13699s · ISO 80",
-    "taken": "2026-07-11",
-    "coords": [
-      37.83,
-      -122.5
     ]
   }
 ]

@@ -10,7 +10,8 @@ Run `npm run dev` to preview at http://localhost:3000 first.
    Each photo is resized to 2560px, compressed, and stripped of all metadata,
    including GPS location. Camera details are saved to `src/data/photos.json` first.
 3. In `src/data/photos.json`, set each new photo's `title` and `location`
-   (optionally a `caption`). Reorder entries to change the gallery order.
+   (optionally a `caption`). New photos are added at the top, newest first;
+   reorder entries to change the gallery order.
    To show it on the globe, add approximate coordinates, e.g.
    `"coords": [37.75, -119.6]` (latitude, longitude; park- or city-level is
    plenty). Photos without `coords` simply stay off the globe.
