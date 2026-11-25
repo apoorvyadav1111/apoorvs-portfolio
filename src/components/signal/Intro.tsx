@@ -13,7 +13,7 @@ import { getPhotos } from "@/lib/photos";
 // It only shows while Signal is on and motion is allowed (globals.css).
 
 // How much scrolling each step takes, in screen heights
-export const STEP_SCREENS = 1.1;
+export const STEP_SCREENS = 2;
 
 interface Step {
   shape: string; // a shape from shapes.ts; "text" spells out `lines`

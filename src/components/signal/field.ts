@@ -49,6 +49,7 @@ uniform float uCrispTo;
 uniform float uTextSize; // letter particles' size, as a multiple of the usual
 varying float vGlow;
 varying float vCrisp;
+varying float vPx;
 varying float vDepth;
 varying float vEnt;
 varying float vRadial;
@@ -117,12 +118,13 @@ void main() {
   // The entity's grains run from dust to a few big ones
   float ent = mix(uEntFrom, uEntTo, p);
   float grain = fract(sin(aSeed.x * 311.7 + aSeed.w * 74.3) * 43758.5453);
-  vary = mix(vary, 0.45 + 2.8 * grain * grain * grain * grain, ent);
+  vary = mix(vary, 0.5 + 1.7 * grain * grain * grain * grain, ent);
   vEnt = ent;
   // The dense core would pile up into a blot: thin it out
   float shell = smoothstep(0.08, 0.45, length(mix(aFrom, aTo, p)));
   float entGlow = mix(0.15, 1.0, shell);
   gl_PointSize = uSize * (3.2 / w) * vary * mix(1.0, uTextSize, crisp);
+  vPx = gl_PointSize;
   vCrisp = crisp;
   float glow = twinkle * (1.0 + push * 1.5);
   vGlow = mix(glow * (0.85 + 0.4 * sin(p * 3.14159)) * (1.0 - 0.7 * haze), glow * 1.15, crisp) * mix(1.0, entGlow, ent);
@@ -142,19 +144,25 @@ varying float vEnt;
 varying float vRadial;
 varying float vDepth;
 varying float vCrisp;
+varying float vPx;
 void main() {
   vec2 c = gl_PointCoord - 0.5;
   float d = length(c);
   if (d > 0.5) discard;
-  // A bright core with a soft edge; a letter's particles are fuller and
+  // Every particle is a solid dot with only a hairline of anti-aliasing,
+  // so the cloud reads as crisp grains, not blur; a letter's particles are
   // lit in the accent (leaning a little toward the text colour), at full
   // strength
-  // (the entity's grains are crisp too, so the big ones read as grains, not blur)
-  float a = mix(smoothstep(0.5, 0.12, d), smoothstep(0.5, 0.3, d), max(vCrisp, vEnt));
+  // about one screen pixel of soft edge, whatever the dot's size
+  float edge = clamp(1.0 / max(vPx, 1.0), 0.04, 0.3);
+  float a = smoothstep(0.5, 0.5 - edge, d);
   float depth = mix(1.0, 0.25 + 0.75 * vDepth * vDepth, uDepthFade);
   vec3 col = mix(mix(uColorB, uColorA, vDepth), mix(uColorA, uColorB, 0.2), vCrisp);
   col = mix(col, mix(uGoldA, uGoldB, vRadial), vEnt);
-  gl_FragColor = vec4(col, a * vGlow * mix(uAlpha * depth, 1.0, vCrisp) * mix(1.0, 0.6 + 0.4 * vRadial, vEnt));
+  // the entity's grains are near-solid too, dimmed a little toward the back
+  float ink = mix(uAlpha * depth, 1.0, vCrisp);
+  ink = mix(ink, 0.55 + 0.4 * vDepth, vEnt);
+  gl_FragColor = vec4(col, a * vGlow * ink);
 }`;
 
 export interface Field {
