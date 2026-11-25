@@ -21,6 +21,11 @@ import { buildShape, textGap, isText, type Shape } from "./shapes";
 const MORPH_MS = 1700;
 const SPREAD = 0.45; // how far apart the first and last points set off, as a fraction of the morph
 const ENTITY = "entity";
+// How the entity turns: speed (rad/s), how far each point lags (rad), and how
+// far its axis tips (rad)
+const TURN = 0.45;
+const LAG = 0.25;
+const TIP = 0.35;
 
 const VERT = `
 attribute vec3 aFrom;
@@ -30,6 +35,8 @@ uniform float uT;
 uniform float uTime;
 uniform float uSwirlFrom; // 1 when that end is the entity, which swirls
 uniform float uSwirlTo;
+uniform float uEntFrom; // 1 when that end is the entity (motion or not): gold, grains of all sizes
+uniform float uEntTo;
 uniform float uDetour;
 uniform vec2 uTurn; // yaw, pitch
 uniform vec2 uMouse; // clip space
@@ -43,12 +50,15 @@ uniform float uTextSize; // letter particles' size, as a multiple of the usual
 varying float vGlow;
 varying float vCrisp;
 varying float vDepth;
+varying float vEnt;
 
-// The entity's churn: every point orbits at its own speed
+// The entity turns as one, on an axis tipped to the side, each point
+// lagging and catching up a little on its own (field() below mirrors this)
 vec3 swirl(vec3 v) {
-  float a = uTime * (0.35 + aSeed.x * 0.9);
+  float a = uTime * ${TURN.toFixed(2)} + ${LAG.toFixed(2)} * sin(uTime * 0.7 + aSeed.x * 6.2832);
   float c = cos(a), s = sin(a);
-  return vec3(v.x * c + v.z * s, v.y, -v.x * s + v.z * c);
+  v = vec3(v.x * c + v.z * s, v.y, -v.x * s + v.z * c);
+  return vec3(v.x * ${Math.cos(TIP).toFixed(4)} - v.y * ${Math.sin(TIP).toFixed(4)}, v.x * ${Math.sin(TIP).toFixed(4)} + v.y * ${Math.cos(TIP).toFixed(4)}, v.z);
 }
 
 void main() {
@@ -99,10 +109,18 @@ void main() {
   gl_Position = vec4(clip, 0.0, 1.0);
   float twinkle = mix(0.65 + 0.35 * sin(uTime * 2.3 + aSeed.x * 97.0), 0.92 + 0.08 * sin(uTime * 2.3 + aSeed.x * 97.0), crisp);
   float vary = mix(0.7 + 0.6 * fract(aSeed.x * 13.0), 0.85 + 0.3 * fract(aSeed.x * 13.0), crisp);
+  // The entity's grains run from dust to a few big ones
+  float ent = mix(uEntFrom, uEntTo, p);
+  float grain = fract(sin(aSeed.x * 311.7 + aSeed.w * 74.3) * 43758.5453);
+  vary = mix(vary, 0.45 + 2.8 * grain * grain * grain * grain, ent);
+  vEnt = ent;
+  // The dense core would add up to a white blot: dim it, brighten the shell
+  float shell = smoothstep(0.08, 0.45, length(mix(aFrom, aTo, p)));
+  float entGlow = mix(0.12, 1.35, shell);
   gl_PointSize = uSize * (3.2 / w) * vary * mix(1.0, uTextSize, crisp);
   vCrisp = crisp;
   float glow = twinkle * (1.0 + push * 1.5);
-  vGlow = mix(glow * (0.85 + 0.4 * sin(p * 3.14159)) * (1.0 - 0.7 * haze), glow * 1.15, crisp);
+  vGlow = mix(glow * (0.85 + 0.4 * sin(p * 3.14159)) * (1.0 - 0.7 * haze), glow * 1.15, crisp) * mix(1.0, entGlow, ent);
   vDepth = clamp((pos.z + 1.0) * 0.5, 0.0, 1.0);
 }`;
 
@@ -112,7 +130,10 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform float uAlpha;
 uniform float uDepthFade; // 0–1: how much the far side fades, for a sense of depth
+uniform vec3 uGoldA; // the entity's gold, near and far
+uniform vec3 uGoldB;
 varying float vGlow;
+varying float vEnt;
 varying float vDepth;
 varying float vCrisp;
 void main() {
@@ -122,9 +143,11 @@ void main() {
   // A bright core with a soft edge; a letter's particles are fuller and
   // lit in the accent (leaning a little toward the text colour), at full
   // strength
-  float a = mix(smoothstep(0.5, 0.12, d), smoothstep(0.5, 0.3, d), vCrisp);
+  // (the entity's grains are crisp too, so the big ones read as grains, not blur)
+  float a = mix(smoothstep(0.5, 0.12, d), smoothstep(0.5, 0.3, d), max(vCrisp, vEnt));
   float depth = mix(1.0, 0.25 + 0.75 * vDepth * vDepth, uDepthFade);
   vec3 col = mix(mix(uColorB, uColorA, vDepth), mix(uColorA, uColorB, 0.2), vCrisp);
+  col = mix(col, mix(uGoldB, uGoldA, vDepth), vEnt);
   gl_FragColor = vec4(col, a * vGlow * mix(uAlpha * depth, 1.0, vCrisp));
 }`;
 
@@ -143,6 +166,12 @@ function rgb(css: string): [number, number, number] {
   const d = c.getImageData(0, 0, 1, 1).data;
   return [d[0] / 255, d[1] / 255, d[2] / 255];
 }
+
+// The entity's gold, [near, far]: bright on dark, deeper on light
+const GOLD = {
+  dark: [rgb("#ffd98a"), rgb("#c98a2a")],
+  light: [rgb("#b8800f"), rgb("#7a4f08")],
+};
 
 // Round things spin; flat ones (a book, a monogram) sway, so they never
 // turn edge-on; text faces the reader
@@ -172,6 +201,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     t: u("uT"), time: u("uTime"), swirlFrom: u("uSwirlFrom"), swirlTo: u("uSwirlTo"), detour: u("uDetour"),
     turn: u("uTurn"), mouse: u("uMouse"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
     size: u("uSize"), a: u("uColorA"), b: u("uColorB"), alpha: u("uAlpha"), depthFade: u("uDepthFade"),
+    entFrom: u("uEntFrom"), entTo: u("uEntTo"), goldA: u("uGoldA"), goldB: u("uGoldB"),
     crispFrom: u("uCrispFrom"), crispTo: u("uCrispTo"), textSize: u("uTextSize"),
   };
 
@@ -319,6 +349,10 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.uniform1f(U.time, time);
     gl!.uniform1f(U.swirlFrom, motion && swirlFrom ? 1 : 0);
     gl!.uniform1f(U.swirlTo, motion && swirlTo ? 1 : 0);
+    gl!.uniform1f(U.entFrom, swirlFrom ? 1 : 0);
+    gl!.uniform1f(U.entTo, swirlTo ? 1 : 0);
+    gl!.uniform3fv(U.goldA, colors.dark ? GOLD.dark[0] : GOLD.light[0]);
+    gl!.uniform3fv(U.goldB, colors.dark ? GOLD.dark[1] : GOLD.light[1]);
     gl!.uniform1f(U.detour, stage ? 0.8 : 0.55);
     gl!.uniform2f(U.turn, yaw + ease.lx * lean, (text ? 0 : 0.1) + ease.ly * lean);
     gl!.uniform2f(U.mouse, motion ? mouse.x : 9, motion ? mouse.y : 9);
@@ -344,20 +378,25 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     const t = motion ? progress(now) : 1;
     const detour = stage ? 0.8 : 0.55;
     const time = clock;
+    const tc = Math.cos(TIP), ts = Math.sin(TIP);
     const out = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) {
       const s = seed[i * 4] * SPREAD;
       const x = Math.min(1, Math.max(0, (t - s) / (1 - SPREAD)));
       const p = x * x * (3 - 2 * x);
       const bump = Math.sin(p * Math.PI) * detour;
-      const ang = time * (0.35 + seed[i * 4] * 0.9);
+      const ang = time * TURN + LAG * Math.sin(time * 0.7 + seed[i * 4] * Math.PI * 2);
       const c = Math.cos(ang), sn = Math.sin(ang);
-      let ax = from[i * 3], az = from[i * 3 + 2];
-      let bx = to[i * 3], bz = to[i * 3 + 2];
-      if (motion && swirlFrom) [ax, az] = [ax * c + az * sn, -ax * sn + az * c];
-      if (motion && swirlTo) [bx, bz] = [bx * c + bz * sn, -bx * sn + bz * c];
+      const turn = (x: number, y: number, z: number) => {
+        const [rx, rz] = [x * c + z * sn, -x * sn + z * c];
+        return [rx * tc - y * ts, rx * ts + y * tc, rz];
+      };
+      let [ax, ay, az] = [from[i * 3], from[i * 3 + 1], from[i * 3 + 2]];
+      let [bx, by, bz] = [to[i * 3], to[i * 3 + 1], to[i * 3 + 2]];
+      if (motion && swirlFrom) [ax, ay, az] = turn(ax, ay, az);
+      if (motion && swirlTo) [bx, by, bz] = turn(bx, by, bz);
       out[i * 3] = ax + (bx - ax) * p + seed[i * 4 + 1] * bump;
-      out[i * 3 + 1] = from[i * 3 + 1] + (to[i * 3 + 1] - from[i * 3 + 1]) * p + seed[i * 4 + 2] * bump;
+      out[i * 3 + 1] = ay + (by - ay) * p + seed[i * 4 + 2] * bump;
       out[i * 3 + 2] = az + (bz - az) * p + seed[i * 4 + 3] * bump;
     }
     return out;

@@ -205,8 +205,9 @@ async function globe(n: number) {
   return out;
 }
 
-// The intro's resting state: a churning shell with a dense core. field.ts
-// sets it swirling and jittering while it's on screen.
+// The intro's resting state: a churning shell with a dense core, a little
+// lopsided (wider than tall, lumpy, the core off-centre) so you can see it
+// turn. field.ts turns it on a tilted axis, jittering, while it's on screen.
 function entity(n: number) {
   const r = rng(9);
   const out = new Float32Array(n * 3);
@@ -215,8 +216,10 @@ function entity(n: number) {
     const a = r() * TAU;
     const s = Math.sqrt(1 - u * u);
     const core = r() < 0.25;
-    const rad = core ? Math.abs(gauss(r)) * 0.18 : 0.72 + gauss(r) * 0.06;
-    out.set([Math.cos(a) * s * rad, u * rad, Math.sin(a) * s * rad], i * 3);
+    const lump = 1 + 0.11 * Math.sin(2 * a + 0.8) * s + 0.07 * u + 0.05 * Math.sin(3 * u + a);
+    const rad = core ? Math.abs(gauss(r)) * 0.18 : 0.72 * lump + gauss(r) * 0.06;
+    const [ox, oy] = core ? [0.06, -0.04] : [0, 0];
+    out.set([Math.cos(a) * s * rad * 1.08 + ox, u * rad * 0.93 + oy, Math.sin(a) * s * rad], i * 3);
   }
   return out;
 }
