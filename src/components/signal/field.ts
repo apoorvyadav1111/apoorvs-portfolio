@@ -108,7 +108,8 @@ void main() {
   clip += uCenter;
 
   // Make way for the pointer, except on the orb: there the pointer is a
-  // gravity well, drawing nearby grains in and whirling them round it
+  // gravity well, drawing nearby grains toward it (without crushing them
+  // into a knot)
   float onOrb = mix(uEntFrom, uEntTo, p);
   vec2 d = clip - uMouse;
   d.x *= uAspect;
@@ -118,11 +119,11 @@ void main() {
 
   vec2 g = clip - uWell.xy;
   g.x *= uAspect;
-  float near = exp(-dot(g, g) / 0.04) * uWell.z * onOrb;
-  float spin = 2.2 * near;
-  g = mat2(cos(spin), sin(spin), -sin(spin), cos(spin)) * g * (1.0 - 0.7 * near);
+  float gr = length(g);
+  float fall = min(0.07 * exp(-gr * gr / 0.15), gr * 0.45) * uWell.z * onOrb;
+  g = (g / max(gr, 1e-4)) * fall;
   g.x /= uAspect;
-  clip = uWell.xy + g;
+  clip -= g;
 
   gl_Position = vec4(clip, 0.0, 1.0);
   float twinkle = mix(0.65 + 0.35 * sin(uTime * 2.3 + aSeed.x * 97.0), 0.92 + 0.08 * sin(uTime * 2.3 + aSeed.x * 97.0), crisp);
@@ -296,7 +297,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const progress = (now: number) => (scrubbing ? scrubT : Math.min(1, (now - began) / MORPH_MS));
 
   // Eased values, so moving between stage and backdrop glides
-  const ease = { cx: 0, cy: 0, scale: 1, alpha: 0, lx: 0, ly: 0, tx: 0, ty: 0 };
+  const ease = { cx: 0, cy: 0, scale: 1, alpha: 0, lx: 0, ly: 0, tx: 0, ty: 0, lean: 0 };
   let yaw = 0;
   let clock = 0; // the shader's time: stops while the tab is hidden
   let last = performance.now();
@@ -370,7 +371,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     // Ease toward it, the short way round
     const off = Math.atan2(Math.sin(yaw - want), Math.cos(yaw - want));
     yaw = motion ? want + off * 0.96 : want;
-    const lean = text ? 0.3 : 1;
+    // the orb holds still: the pointer only pulls its grains
+    ease.lean += ((text ? 0.3 : (swirlTo || swirlFrom) && stage ? 0 : 1) - ease.lean) * 0.05;
+    const lean = ease.lean;
 
     gl!.clearColor(0, 0, 0, 0);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
