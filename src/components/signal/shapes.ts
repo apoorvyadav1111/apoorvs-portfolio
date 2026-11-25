@@ -78,14 +78,64 @@ async function monogram(n: number) {
   }, 0.22);
 }
 
-async function code(n: number) {
-  const f = await font("--font-jetbrains", 600, 158);
-  return fromPainting(n, 2, (ctx, w, h) => {
-    ctx.font = f;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("</>", w / 2, h / 2);
-  }, 0.2);
+// Things in motion: a core with rings of dust streaming round it on
+// different tilts, a few bodies riding the rings (the shader turns them)
+function orbits(n: number) {
+  const r = rng(6);
+  const out = new Float32Array(n * 3);
+  const flow = new Float32Array(n * 4);
+  // radius, ring tilt (its axis), angular speed (radians a second: the inner
+  // ones quicker), bodies on it
+  const rings: { rad: number; axis: [number, number, number]; speed: number; bodies: number }[] = [
+    { rad: 0.42, axis: [0.25, 1, 0.35], speed: 0.55, bodies: 1 },
+    { rad: 0.7, axis: [-0.45, 1, 0.1], speed: -0.36, bodies: 2 },
+    { rad: 0.98, axis: [0.15, 1, -0.5], speed: 0.24, bodies: 1 },
+  ];
+  const unit = (v: number[]) => {
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const cross = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const frames = rings.map((g) => {
+    const k = unit(g.axis);
+    const u = unit(cross(k, [0, 0, 1]));
+    const v = cross(k, u);
+    const at = Array.from({ length: g.bodies }, () => r() * TAU);
+    return { ...g, k, u, v, at };
+  });
+  for (let i = 0; i < n; i++) {
+    const roll = r();
+    if (roll < 0.14) {
+      // the core, turning slowly
+      const s = 0.07 + 0.05 * r();
+      out.set([gauss(r) * s, gauss(r) * s, gauss(r) * s], i * 3);
+      flow.set([0, 0.15, 0, 2], i * 4);
+      continue;
+    }
+    const g = frames[Math.floor(r() * frames.length)];
+    let x: number, y: number, z: number;
+    if (roll < 0.26) {
+      // a body: a tight clump at one spot on the ring
+      const a = g.at[Math.floor(r() * g.at.length)];
+      const c = [Math.cos(a) * g.rad, Math.sin(a) * g.rad];
+      const s = 0.035;
+      x = g.u[0] * c[0] + g.v[0] * c[1] + gauss(r) * s;
+      y = g.u[1] * c[0] + g.v[1] * c[1] + gauss(r) * s;
+      z = g.u[2] * c[0] + g.v[2] * c[1] + gauss(r) * s;
+    } else {
+      // the ring's dust, thicker in places
+      const a = r() * TAU;
+      const rad = g.rad + gauss(r) * 0.018 * (1 + Math.sin(a * 3) * 0.6);
+      const lift = gauss(r) * 0.01;
+      x = (g.u[0] * Math.cos(a) + g.v[0] * Math.sin(a)) * rad + g.k[0] * lift;
+      y = (g.u[1] * Math.cos(a) + g.v[1] * Math.sin(a)) * rad + g.k[1] * lift;
+      z = (g.u[2] * Math.cos(a) + g.v[2] * Math.sin(a)) * rad + g.k[2] * lift;
+    }
+    out.set([x, y, z], i * 3);
+    flow.set([g.k[0] * g.speed, g.k[1] * g.speed, g.k[2] * g.speed, 2], i * 4);
+  }
+  flows.set(out, flow);
+  return out;
 }
 
 function paw(n: number) {
@@ -389,7 +439,7 @@ function tilt(p: Float32Array, pitch: number, roll: number) {
 const BUILDERS: Record<Shape, (n: number) => Float32Array | Promise<Float32Array>> = {
   monogram,
   network,
-  code,
+  orbits,
   book,
   pages,
   globe,

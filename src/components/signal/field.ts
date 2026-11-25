@@ -34,7 +34,8 @@ const VERT = `
 attribute vec3 aFrom;
 attribute vec3 aTo;
 attribute vec4 aSeed; // x: head start, yzw: detour direction
-// Packets: points that travel along an edge (xyz: the way to go; w: 1 if it's a packet)
+// Points that move on their own. w = 1: a packet, travelling an edge (xyz: the
+// way to go). w = 2: in orbit, turning about xyz (its length: radians a second).
 attribute vec4 aFlowFrom;
 attribute vec4 aFlowTo;
 uniform float uT;
@@ -73,14 +74,23 @@ vec3 swirl(vec3 v) {
   return vec3(v.x * ${Math.cos(TIP).toFixed(4)} - v.y * ${Math.sin(TIP).toFixed(4)}, v.x * ${Math.sin(TIP).toFixed(4)} + v.y * ${Math.cos(TIP).toFixed(4)}, v.z);
 }
 
+vec3 travel(vec3 v, vec4 f, float trip) {
+  if (f.w < 1.5) return v + f.xyz * trip * f.w;
+  float s = length(f.xyz);
+  vec3 k = f.xyz / s;
+  float c = cos(uTime * s), sn = sin(uTime * s);
+  return v * c + cross(k, v) * sn + k * dot(k, v) * (1.0 - c);
+}
+
 void main() {
   float p = smoothstep(aSeed.x * ${SPREAD.toFixed(2)}, aSeed.x * ${SPREAD.toFixed(2)} + ${(1 - SPREAD).toFixed(2)}, uT);
   vec3 a = uSwirlFrom > 0.5 ? swirl(aFrom) : aFrom;
   vec3 b = uSwirlTo > 0.5 ? swirl(aTo) : aTo;
-  // A packet runs along its edge, over and over, each at its own phase
+  // A packet runs along its edge, over and over, each at its own phase;
+  // an orbiting point goes round and round
   float trip = fract(uTime * ${FLOW_SPEED.toFixed(2)} + aSeed.x * 7.0);
-  a += aFlowFrom.xyz * trip;
-  b += aFlowTo.xyz * trip;
+  a = travel(a, aFlowFrom, trip);
+  b = travel(b, aFlowTo, trip);
   vec3 pos = mix(a, b, p) + aSeed.yzw * sin(p * 3.14159) * uDetour;
 
   // The entity also pulses and twitches, frame to frame
@@ -152,7 +162,7 @@ void main() {
   float shell = smoothstep(0.08, 0.45, length(mix(aFrom, aTo, p)));
   float entGlow = mix(0.15, 1.0, shell);
   // Packets: a touch bigger, steady, and faded in and out at the nodes
-  float packet = mix(aFlowFrom.w, aFlowTo.w, p) * settled;
+  float packet = mix(step(0.5, aFlowFrom.w) * step(aFlowFrom.w, 1.5), step(0.5, aFlowTo.w) * step(aFlowTo.w, 1.5), p) * settled;
   vPacket = packet;
   vTrip = sqrt(sin(trip * 3.14159));
   vary = mix(vary, 1.6, packet);
@@ -208,6 +218,21 @@ export interface Field {
   scrub(a: Shape, b: Shape, t: number): void;
   setMotion(on: boolean): void;
   stop(): void;
+}
+
+// The shader's travel(), for snapshot()
+function travel(x: number, y: number, z: number, f: Float32Array, i: number, trip: number, time: number): [number, number, number] {
+  const [fx, fy, fz, mode] = [f[i * 4], f[i * 4 + 1], f[i * 4 + 2], f[i * 4 + 3]];
+  if (mode < 1.5) return [x + fx * trip * mode, y + fy * trip * mode, z + fz * trip * mode];
+  const s = Math.hypot(fx, fy, fz);
+  const [kx, ky, kz] = [fx / s, fy / s, fz / s];
+  const c = Math.cos(time * s), sn = Math.sin(time * s);
+  const dot = (kx * x + ky * y + kz * z) * (1 - c);
+  return [
+    x * c + (ky * z - kz * y) * sn + kx * dot,
+    y * c + (kz * x - kx * z) * sn + ky * dot,
+    z * c + (kx * y - ky * x) * sn + kz * dot,
+  ];
 }
 
 // CSS colour → [r, g, b] in 0–1
@@ -483,8 +508,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       let [ax, ay, az] = [from[i * 3], from[i * 3 + 1], from[i * 3 + 2]];
       let [bx, by, bz] = [to[i * 3], to[i * 3 + 1], to[i * 3 + 2]];
       const trip = (((time * FLOW_SPEED + seed[i * 4] * 7) % 1) + 1) % 1;
-      if (fa) [ax, ay, az] = [ax + fa[i * 4] * trip, ay + fa[i * 4 + 1] * trip, az + fa[i * 4 + 2] * trip];
-      if (fb) [bx, by, bz] = [bx + fb[i * 4] * trip, by + fb[i * 4 + 1] * trip, bz + fb[i * 4 + 2] * trip];
+      if (fa) [ax, ay, az] = travel(ax, ay, az, fa, i, trip, time);
+      if (fb) [bx, by, bz] = travel(bx, by, bz, fb, i, trip, time);
       if (motion && swirlFrom) [ax, ay, az] = turn(ax, ay, az);
       if (motion && swirlTo) [bx, by, bz] = turn(bx, by, bz);
       out[i * 3] = ax + (bx - ax) * p + seed[i * 4 + 1] * bump;

@@ -162,7 +162,7 @@ export default function Home() {
       </section>
 
       {/* Projects */}
-      <section id="projects" data-signal="code" className="pb-28">
+      <section id="projects" data-signal="orbits" className="pb-28">
         <SectionHeading index="02" title="Projects" />
         <div className="grid gap-4 sm:grid-cols-2">
           {projects.map((project) => {
