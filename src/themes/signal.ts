@@ -20,7 +20,7 @@ export const signal: Theme = {
   // Quick and clean: things flicker on like a display waking up
   motion: { reveal: "assemble", duration: 700, ease: "cubic-bezier(0.2, 0.8, 0.2, 1)", stagger: 60, tilt: 3, glow: 0.9 },
   // Surfaces are see-through so the cloud shows behind cards (blurred, see globals.css)
-  // Gold on warm black (or deep gold on warm paper)
+  // Champagne gold on warm charcoal (or deep gold on warm paper)
   light: {
     bg: "#f4f1ea",
     surface: "rgba(255, 253, 248, 0.62)",
@@ -32,13 +32,13 @@ export const signal: Theme = {
     sun: "#8f5d00",
   },
   dark: {
-    bg: "#070605",
-    surface: "rgba(28, 24, 16, 0.6)",
-    fg: "#f2ece0",
-    muted: "#948b78",
-    line: "#2a251b",
-    accent: "#f3b94a",
-    accentFg: "#1a1203",
-    sun: "#f3b94a",
+    bg: "#14120e",
+    surface: "rgba(36, 32, 25, 0.6)",
+    fg: "#ede6d8",
+    muted: "#a2998a",
+    line: "#2f2a21",
+    accent: "#d6b26c",
+    accentFg: "#1a1405",
+    sun: "#d6b26c",
   },
 };

@@ -51,6 +51,7 @@ varying float vGlow;
 varying float vCrisp;
 varying float vDepth;
 varying float vEnt;
+varying float vRadial;
 
 // The entity turns as one, on an axis tipped to the side, each point
 // lagging and catching up a little on its own (field() below mirrors this)
@@ -90,6 +91,10 @@ void main() {
   // Breathing (barely, on a letter)
   pos += aSeed.yzw * 0.01 * (1.0 - 0.85 * crisp) * sin(uTime * 0.9 + aSeed.x * 40.0);
 
+  // How far out from the middle the point sits, as seen: the entity is pale
+  // at the centre and deepens to gold at the rim
+  vRadial = smoothstep(0.05, 0.8, length(pos.xy));
+
   float cy = cos(uTurn.x), sy = sin(uTurn.x), cp = cos(uTurn.y), sp = sin(uTurn.y);
   pos = vec3(pos.x * cy + pos.z * sy, pos.y, -pos.x * sy + pos.z * cy);
   pos = vec3(pos.x, pos.y * cp - pos.z * sp, pos.y * sp + pos.z * cp);
@@ -114,9 +119,9 @@ void main() {
   float grain = fract(sin(aSeed.x * 311.7 + aSeed.w * 74.3) * 43758.5453);
   vary = mix(vary, 0.45 + 2.8 * grain * grain * grain * grain, ent);
   vEnt = ent;
-  // The dense core would add up to a white blot: dim it, brighten the shell
+  // The dense core would pile up into a blot: thin it out
   float shell = smoothstep(0.08, 0.45, length(mix(aFrom, aTo, p)));
-  float entGlow = mix(0.12, 1.35, shell);
+  float entGlow = mix(0.15, 1.0, shell);
   gl_PointSize = uSize * (3.2 / w) * vary * mix(1.0, uTextSize, crisp);
   vCrisp = crisp;
   float glow = twinkle * (1.0 + push * 1.5);
@@ -130,10 +135,11 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform float uAlpha;
 uniform float uDepthFade; // 0–1: how much the far side fades, for a sense of depth
-uniform vec3 uGoldA; // the entity's gold, near and far
+uniform vec3 uGoldA; // the entity's gold, at the centre and the rim
 uniform vec3 uGoldB;
 varying float vGlow;
 varying float vEnt;
+varying float vRadial;
 varying float vDepth;
 varying float vCrisp;
 void main() {
@@ -147,8 +153,8 @@ void main() {
   float a = mix(smoothstep(0.5, 0.12, d), smoothstep(0.5, 0.3, d), max(vCrisp, vEnt));
   float depth = mix(1.0, 0.25 + 0.75 * vDepth * vDepth, uDepthFade);
   vec3 col = mix(mix(uColorB, uColorA, vDepth), mix(uColorA, uColorB, 0.2), vCrisp);
-  col = mix(col, mix(uGoldB, uGoldA, vDepth), vEnt);
-  gl_FragColor = vec4(col, a * vGlow * mix(uAlpha * depth, 1.0, vCrisp));
+  col = mix(col, mix(uGoldA, uGoldB, vRadial), vEnt);
+  gl_FragColor = vec4(col, a * vGlow * mix(uAlpha * depth, 1.0, vCrisp) * mix(1.0, 0.6 + 0.4 * vRadial, vEnt));
 }`;
 
 export interface Field {
@@ -167,10 +173,10 @@ function rgb(css: string): [number, number, number] {
   return [d[0] / 255, d[1] / 255, d[2] / 255];
 }
 
-// The entity's gold, [near, far]: bright on dark, deeper on light
+// The entity's gold, [centre, rim]: pale in the middle, deeper outside
 const GOLD = {
-  dark: [rgb("#ffd98a"), rgb("#c98a2a")],
-  light: [rgb("#b8800f"), rgb("#7a4f08")],
+  dark: [rgb("#f4e6c6"), rgb("#b68d4c")],
+  light: [rgb("#dcc28a"), rgb("#86590f")],
 };
 
 // Round things spin; flat ones (a book, a monogram) sway, so they never
@@ -179,7 +185,7 @@ const SPINS: Shape[] = ["globe", "network", "orb", ENTITY];
 
 export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: boolean, motion: boolean): Field | null {
   const gl = canvas.getContext("webgl", { alpha: true, antialias: false, premultipliedAlpha: false });
-  if (!gl) return null;
+  if (!gl || gl.isContextLost()) return null;
 
   const small = matchMedia("(max-width: 768px)").matches || navigator.hardwareConcurrency <= 4;
   const N = small ? 16000 : 42000;
@@ -228,7 +234,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   let to: Float32Array = from.slice();
   const fromBuf = buffer(from, "aFrom", 3);
   const toBuf = buffer(to, "aTo", 3);
-  buffer(seed, "aSeed", 4);
+  const seedBuf = buffer(seed, "aSeed", 4);
   const upload = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, fromBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, from);
@@ -297,14 +303,14 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
         cx: 0,
         cy: text ? 0.1 : 0.06,
         scale: text ? 1 : Math.min(0.78, 0.7 * aspect),
-        alpha: text ? (colors.dark ? 0.95 : 0.9) : current === "globe" ? 1.1 : colors.dark ? 0.75 : 0.64,
+        alpha: text ? 0.9 : current === "globe" ? 1.1 : colors.dark ? 0.6 : 0.64,
       };
     }
     return {
       cx: wide ? 0.38 : 0,
       cy: wide ? 0 : 0.05,
       scale: wide ? Math.min(1.5, (h / w) * 2.1) : Math.min(1.3, (h / w) * 1.7),
-      alpha: colors.dark ? (wide ? 0.3 : 0.18) : wide ? 0.16 : 0.07,
+      alpha: colors.dark ? (wide ? 0.13 : 0.06) : wide ? 0.16 : 0.07,
     };
   }
 
@@ -340,11 +346,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.clearColor(0, 0, 0, 0);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
     gl!.enable(gl!.BLEND);
-    // Light adds up into a glow on dark; on light it's ink, layered normally
-    // (on light, the canvas's own alpha builds up properly too, so dots
-    // stacked on a letter end up solid)
-    if (colors.dark) gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE);
-    else gl!.blendFuncSeparate(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA, gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
+    // Matte, like ink, on dark and light alike (glowing, additive light
+    // looked cheap); the canvas's own alpha builds up properly too
+    gl!.blendFuncSeparate(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA, gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
     gl!.uniform1f(U.t, t);
     gl!.uniform1f(U.time, time);
     gl!.uniform1f(U.swirlFrom, motion && swirlFrom ? 1 : 0);
@@ -529,7 +533,15 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
-      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      // Free what it holds, but keep the context: the canvas stays, and if
+      // Signal comes back it gets this same context again (a lost one
+      // can't compile shaders)
+      gl.deleteBuffer(fromBuf);
+      gl.deleteBuffer(toBuf);
+      gl.deleteBuffer(seedBuf);
+      gl.deleteProgram(prog);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
     },
   };
 }
