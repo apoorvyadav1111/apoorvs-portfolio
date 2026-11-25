@@ -1,22 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Flower2, Leaf, Snowflake, Sparkles, Sun, X } from "lucide-react";
 import { DEFAULT_THEME, THEMES, currentSeason } from "@/themes";
 import type { Season } from "@/themes";
 import { forSession, setPalette, setSessionPalette, transition } from "./AppearanceMenu";
 
-// A sneak peek at the showier themes, for first-time visitors on the default
-// look: Signal (the particle cloud) and this season's theme (its weather).
+// A sneak peek at the showier themes: Signal (the particle cloud) and this
+// season's theme (its weather), less whichever one is already on.
 // Trying one only lasts the session (like the console's out-of-season
-// themes), with "Keep it" to make it stick or "Back" to undo. It never shows
-// to anyone who has picked a theme, and closing it hides it for good.
+// themes), with "Keep it" to make it stick or "Back" to undo. First-time
+// visitors get it until they act on it; anyone who has picked a theme sees
+// it only for a few seconds (longer while the pointer's on it). Closing it,
+// or keeping a theme, hides it for good.
 
 const SEASON_ICONS: Record<Season, typeof Sun> = { spring: Flower2, summer: Sun, autumn: Leaf, winter: Snowflake };
 
 const DONE = "peek"; // localStorage: "done" once kept or closed
 const PEEKING = "peek"; // sessionStorage: the theme being tried
+const BRIEF_MS = 8000; // how long it stays for someone who's picked a theme
 
 function read(store: "local" | "session", key: string) {
   try {
@@ -37,28 +40,50 @@ export default function ThemePeek() {
   // null until mounted (the server can't know), then "offer", a theme id
   // while it's being tried, or "hidden"
   const [state, setState] = useState<string | null>(null);
+  // The visitor's own theme, if they've picked one: "Back" returns to it,
+  // and the offer only stays briefly
+  const [home, setHome] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     // Mid-peek (after a reload or a new page): straight back to Keep/Back.
-    // Otherwise offer it, once the page has landed, unless a theme's been
-    // picked or it was closed before.
+    // Otherwise offer it, once the page has landed, unless it was closed
+    // before (or the console has put on a theme for the session).
+    // `?peek` in the URL shows it regardless.
     const peeking = read("session", PEEKING);
     const resume = peeking && document.documentElement.dataset.palette === peeking;
-    // `?peek` in the URL shows it anyway (to see it after picking a theme)
     const forced = new URLSearchParams(location.search).has("peek");
-    if (!resume && !forced && (read("local", "palette") || read("session", "palette") || read("local", DONE) === "done")) return;
-    const id = setTimeout(() => setState(resume ? peeking : "offer"), resume ? 0 : 2500);
+    if (!resume && !forced && (read("session", "palette") || read("local", DONE) === "done")) return;
+    const id = setTimeout(() => {
+      setHome(read("local", "palette"));
+      setState(resume ? peeking : "offer");
+    }, resume ? 0 : 2500);
     return () => clearTimeout(id);
   }, []);
+
+  // Someone with a theme of their own only gets a brief look at the offer
+  const brief = state === "offer" && !!home;
+  const fadeLater = (ms: number) => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setState("hidden"), ms);
+  };
+  useEffect(() => {
+    if (!brief) return;
+    fadeLater(BRIEF_MS);
+    return () => clearTimeout(timer.current);
+  }, [brief]);
 
   if (!state || state === "hidden" || pathname.startsWith("/doodles")) return null;
 
   const seasonal = THEMES.find((t) => t.season === currentSeason());
   const SeasonIcon = seasonal?.season ? SEASON_ICONS[seasonal.season] : Sun;
-  const options = [
+  const all = [
     { id: "signal", label: "Signal", hint: "particles", Icon: Sparkles },
     ...(seasonal ? [{ id: seasonal.id, label: seasonal.name, hint: "weather", Icon: SeasonIcon }] : []),
   ];
+  // Nothing to peek at that isn't already on
+  const options = state === "offer" ? all.filter((o) => o.id !== (home ?? DEFAULT_THEME)) : all;
+  if (!options.length) return null;
 
   const at = (e: React.MouseEvent) => (e.clientX || e.clientY ? { x: e.clientX, y: e.clientY } : undefined);
 
@@ -69,7 +94,7 @@ export default function ThemePeek() {
   };
   const back = (e: React.MouseEvent) => {
     transition(() => {
-      document.documentElement.setAttribute("data-palette", DEFAULT_THEME);
+      document.documentElement.setAttribute("data-palette", home ?? DEFAULT_THEME);
       forSession("palette", null);
     }, at(e));
     forSession(PEEKING, null);
@@ -95,6 +120,10 @@ export default function ThemePeek() {
       aria-label="Try another theme"
       className="theme-peek rise fixed bottom-5 left-5 z-40 flex max-w-[calc(100vw-2.5rem)] items-center gap-1 rounded-pill border border-line bg-bg/85 p-1 pl-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted shadow-lg backdrop-blur"
       style={{ animationDuration: "0.4s" }}
+      // A brief offer waits while the visitor is on it
+      onPointerEnter={() => brief && clearTimeout(timer.current)}
+      onPointerLeave={() => brief && fadeLater(3000)}
+      onFocus={() => brief && clearTimeout(timer.current)}
     >
       {trying ? (
         <>
