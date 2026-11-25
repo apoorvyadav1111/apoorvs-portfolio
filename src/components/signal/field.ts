@@ -11,7 +11,8 @@
 //                   MORPH_MS, off to the side and faint (or centre stage).
 // Text faces the reader; the "entity" swirls and jitters like something
 // alive; other shapes turn or sway and lean toward the pointer, and points
-// near the pointer get pushed aside.
+// near the pointer get pushed aside (or, on the landing orb, pulled into
+// its gravity well).
 //
 // With motion off (reduced motion or the console), it draws one still frame
 // whenever the shape changes, and nothing in between.
@@ -40,6 +41,7 @@ uniform float uEntTo;
 uniform float uDetour;
 uniform vec2 uTurn; // yaw, pitch
 uniform vec2 uMouse; // clip space
+uniform vec3 uWell; // the orb's gravity well: eased pointer position, strength
 uniform float uAspect;
 uniform vec2 uCenter;
 uniform float uScale;
@@ -105,12 +107,22 @@ void main() {
   clip.x /= uAspect;
   clip += uCenter;
 
-  // Make way for the pointer
+  // Make way for the pointer, except on the orb: there the pointer is a
+  // gravity well, drawing nearby grains in and whirling them round it
+  float onOrb = mix(uEntFrom, uEntTo, p);
   vec2 d = clip - uMouse;
   d.x *= uAspect;
   float r = length(d);
-  float push = smoothstep(0.13, 0.0, r);
+  float push = smoothstep(0.13, 0.0, r) * (1.0 - onOrb);
   clip += (d / max(r, 1e-4)) * push * 0.035 * vec2(1.0 / uAspect, 1.0);
+
+  vec2 g = clip - uWell.xy;
+  g.x *= uAspect;
+  float near = exp(-dot(g, g) / 0.04) * uWell.z * onOrb;
+  float spin = 2.2 * near;
+  g = mat2(cos(spin), sin(spin), -sin(spin), cos(spin)) * g * (1.0 - 0.7 * near);
+  g.x /= uAspect;
+  clip = uWell.xy + g;
 
   gl_Position = vec4(clip, 0.0, 1.0);
   float twinkle = mix(0.65 + 0.35 * sin(uTime * 2.3 + aSeed.x * 97.0), 0.92 + 0.08 * sin(uTime * 2.3 + aSeed.x * 97.0), crisp);
@@ -213,7 +225,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const u = (name: string) => gl.getUniformLocation(prog, name);
   const U = {
     t: u("uT"), time: u("uTime"), swirlFrom: u("uSwirlFrom"), swirlTo: u("uSwirlTo"), detour: u("uDetour"),
-    turn: u("uTurn"), mouse: u("uMouse"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
+    turn: u("uTurn"), mouse: u("uMouse"), well: u("uWell"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
     size: u("uSize"), a: u("uColorA"), b: u("uColorB"), alpha: u("uAlpha"), depthFade: u("uDepthFade"),
     entFrom: u("uEntFrom"), entTo: u("uEntTo"), goldA: u("uGoldA"), goldB: u("uGoldB"),
     crispFrom: u("uCrispFrom"), crispTo: u("uCrispTo"), textSize: u("uTextSize"),
@@ -300,6 +312,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const onLeave = () => {
     mouse.x = mouse.y = 9;
   };
+  // The orb's gravity well trails the pointer and fades in and out with it
+  const well = { x: 0, y: 0, s: 0 };
 
   // Where things should be for the current shape and place
   function targets() {
@@ -338,6 +352,13 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     ease.alpha += (goal.alpha - ease.alpha) * k;
     ease.lx += (ease.tx - ease.lx) * 0.04;
     ease.ly += (ease.ty - ease.ly) * 0.04;
+    const here = motion && mouse.x < 2;
+    if (here && well.s < 0.01) Object.assign(well, { x: mouse.x, y: mouse.y });
+    if (here) {
+      well.x += (mouse.x - well.x) * 0.08;
+      well.y += (mouse.y - well.y) * 0.08;
+    }
+    well.s += ((here ? 1 : 0) - well.s) * 0.05;
 
     const text = current !== null && isText(current);
     const spin = current !== null && SPINS.includes(current);
@@ -368,6 +389,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.uniform1f(U.detour, stage ? 0.8 : 0.55);
     gl!.uniform2f(U.turn, yaw + ease.lx * lean, (text ? 0 : 0.1) + ease.ly * lean);
     gl!.uniform2f(U.mouse, motion ? mouse.x : 9, motion ? mouse.y : 9);
+    gl!.uniform3f(U.well, well.x, well.y, well.s);
     gl!.uniform1f(U.aspect, w / h);
     gl!.uniform2f(U.center, ease.cx, ease.cy);
     gl!.uniform1f(U.scale, ease.scale);
