@@ -375,7 +375,10 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       cx: wide ? 0.38 : 0,
       cy: wide ? 0 : 0.05,
       scale: wide ? Math.min(1.5, (h / w) * 2.1) : Math.min(1.3, (h / w) * 1.7),
-      alpha: colors.dark ? (wide ? 0.13 : 0.06) : wide ? 0.16 : 0.07,
+      // On dark, the canvas's colour and coverage multiply (light points on
+      // a near-black page come out at about alpha²), so ask for the square
+      // root of what should show: ~0.13 wide, ~0.06 narrow
+      alpha: colors.dark ? (wide ? 0.36 : 0.245) : wide ? 0.16 : 0.07,
     };
   }
 
