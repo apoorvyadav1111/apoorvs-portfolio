@@ -23,6 +23,10 @@ const SHAPE_BY_PAGE: [RegExp, Shape][] = [
   [/^\/doodles/, "paw"],
 ];
 
+// The fastest the intro moves on, in steps per second, however fast the
+// scroll: a fling still plays every shape through instead of skipping
+const MAX_STEPS_PER_S = 0.9;
+
 function pageShape(path: string): Shape {
   return SHAPE_BY_PAGE.find(([re]) => re.test(path))?.[1] ?? "orb";
 }
@@ -70,12 +74,29 @@ export default function Signal() {
   // from 25% to 85% of the way between them) and fading in its caption;
   // elsewhere it morphs to the section's shape by itself
   const update = useRef(() => {});
+  // Where the intro is showing (trailing the scroll when it's quick), and a
+  // frame queued to keep catching up
+  const shown = useRef<{ x: number; at: number } | null>(null);
+  const chase = useRef(0);
   update.current = () => {
     const root = document.documentElement;
     const at = root.dataset.palette === "signal" ? introAt() : null;
     if (at) {
       root.dataset.intro = "";
-      const { intro, steps, x } = at;
+      const { intro, steps } = at;
+      const now = performance.now();
+      const was = shown.current;
+      let x = at.x;
+      if (was && root.hasAttribute("data-motion")) {
+        const dt = Math.min(0.05, (now - was.at) / 1000);
+        const gap = at.x - was.x;
+        // ease in when near, never faster than the limit
+        const step = Math.sign(gap) * Math.min(Math.abs(gap), Math.max(Math.abs(gap) * 0.2, 0.02), MAX_STEPS_PER_S * dt);
+        x = Math.abs(gap) < 0.002 ? at.x : was.x + step;
+      }
+      shown.current = { x, at: now };
+      cancelAnimationFrame(chase.current);
+      if (x !== at.x) chase.current = requestAnimationFrame(() => update.current());
       const seg = Math.min(Math.floor(x), steps.length - 2);
       const f = (x - seg - 0.25) / 0.6;
       const c = Math.min(1, Math.max(0, f));
@@ -85,6 +106,7 @@ export default function Signal() {
         el.style.opacity = String(Math.min(1, Math.max(0, 1 - (off - 0.12) * 4)));
       });
     } else {
+      shown.current = null;
       delete root.dataset.intro;
       field.current?.show(pick.current(), false);
     }
@@ -136,6 +158,7 @@ export default function Signal() {
       watcher.disconnect();
       removeEventListener("scroll", onScroll);
       cancelAnimationFrame(queued);
+      cancelAnimationFrame(chase.current);
       field.current?.stop();
       field.current = null;
       delete root.dataset.intro;
