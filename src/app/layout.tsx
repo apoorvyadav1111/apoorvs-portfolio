@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Motion from "@/components/Motion";
 import SeasonSky from "@/components/SeasonSky";
+import ThemePeek from "@/components/ThemePeek";
 import Signal from "@/components/Signal";
 import EasterEggs from "@/components/EasterEggs";
 import TimelapseBadge from "@/components/TimelapseBadge";
@@ -53,6 +54,7 @@ export default function RootLayout({
         <SeasonSky />
         <Signal />
         <TimelapseBadge />
+        <ThemePeek />
         <EasterEggs repo="https://github.com/apoorvyadav1111/apoorvs-portfolio" />
         <ConsoleTrigger />
       </body>

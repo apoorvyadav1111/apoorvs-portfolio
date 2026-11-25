@@ -596,6 +596,14 @@ body::before {
   opacity: 0;
   pointer-events: none;
 }
+/* On a phone the sneak-peek pill (ThemePeek.tsx) would sit on "Skip intro":
+   while the intro's on, it takes the header's empty spot instead */
+@media (max-width: 640px) {
+  [data-palette="signal"][data-intro] .theme-peek {
+    top: 1rem;
+    bottom: auto;
+  }
+}
 .signal-scroll-cue {
   transform-origin: top;
   animation: signal-cue 1.8s ease-in-out infinite;
