@@ -44,7 +44,9 @@ export default function ThemePeek() {
     // picked or it was closed before.
     const peeking = read("session", PEEKING);
     const resume = peeking && document.documentElement.dataset.palette === peeking;
-    if (!resume && (read("local", "palette") || read("session", "palette") || read("local", DONE) === "done")) return;
+    // `?peek` in the URL shows it anyway (to see it after picking a theme)
+    const forced = new URLSearchParams(location.search).has("peek");
+    if (!resume && !forced && (read("local", "palette") || read("session", "palette") || read("local", DONE) === "done")) return;
     const id = setTimeout(() => setState(resume ? peeking : "offer"), resume ? 0 : 2500);
     return () => clearTimeout(id);
   }, []);
