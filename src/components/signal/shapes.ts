@@ -121,9 +121,18 @@ function network(n: number) {
     edges.push([i, (i + 1 + Math.floor(r() * 3)) % (nodes.length - 1)]);
   }
   const out = new Float32Array(n * 3);
+  // A few points are packets: each sits on a node and travels an edge to
+  // the next (the shader moves it), carrying information about
+  const flow = new Float32Array(n * 4);
+  const packets = Math.round(n * 0.006);
   for (let i = 0; i < n; i++) {
     let x: number, y: number, z: number;
-    if (r() < 0.45) {
+    if (i < packets) {
+      const e = edges[i % edges.length];
+      const [a, b] = r() < 0.5 ? e : [e[1], e[0]];
+      [x, y, z] = nodes[a];
+      flow.set([nodes[b][0] - x, nodes[b][1] - y, nodes[b][2] - z, 1], i * 4);
+    } else if (r() < 0.45) {
       const [nx, ny, nz] = nodes[Math.floor(r() * nodes.length)];
       const s = 0.05 + r() * 0.04;
       x = nx + gauss(r) * s;
@@ -139,6 +148,7 @@ function network(n: number) {
     }
     out.set([x, y, z], i * 3);
   }
+  flows.set(out, flow);
   return out;
 }
 
@@ -337,6 +347,10 @@ const GAP_PX = 2.8;
 
 // How far apart a text shape's particles are, so field.ts can size them
 export const textGap = new WeakMap<Float32Array, number>();
+
+// For shapes with packets (the network): per point, the way it travels
+// (x, y, z) and whether it's a packet at all (w)
+export const flows = new WeakMap<Float32Array, Float32Array>();
 
 // A soft sphere with rings, for pages without a shape of their own
 function orb(n: number) {

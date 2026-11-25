@@ -17,13 +17,15 @@
 // With motion off (reduced motion or the console), it draws one still frame
 // whenever the shape changes, and nothing in between.
 
-import { buildShape, textGap, isText, type Shape } from "./shapes";
+import { buildShape, textGap, flows, isText, type Shape } from "./shapes";
 
 const MORPH_MS = 1700;
 const SPREAD = 0.45; // how far apart the first and last points set off, as a fraction of the morph
 const ENTITY = "entity";
 // How the entity turns: speed (rad/s), how far each point lags (rad), and how
 // far its axis tips (rad)
+// How fast a packet crosses its edge: once every few seconds
+const FLOW_SPEED = 0.35;
 const TURN = 0.45;
 const LAG = 0.25;
 const TIP = 0.35;
@@ -32,6 +34,9 @@ const VERT = `
 attribute vec3 aFrom;
 attribute vec3 aTo;
 attribute vec4 aSeed; // x: head start, yzw: detour direction
+// Packets: points that travel along an edge (xyz: the way to go; w: 1 if it's a packet)
+attribute vec4 aFlowFrom;
+attribute vec4 aFlowTo;
 uniform float uT;
 uniform float uTime;
 uniform float uSwirlFrom; // 1 when that end is the entity, which swirls
@@ -42,6 +47,7 @@ uniform float uDetour;
 uniform vec2 uTurn; // yaw, pitch
 uniform vec2 uMouse; // clip space
 uniform vec3 uWell; // the orb's gravity well: eased pointer position, strength
+uniform float uGrip; // 0–1: how long the pointer's been held down, eased (a stronger, wider pull)
 uniform float uAspect;
 uniform vec2 uCenter;
 uniform float uScale;
@@ -55,6 +61,8 @@ varying float vPx;
 varying float vDepth;
 varying float vEnt;
 varying float vRadial;
+varying float vPacket;
+varying float vTrip;
 
 // The entity turns as one, on an axis tipped to the side, each point
 // lagging and catching up a little on its own (field() below mirrors this)
@@ -69,6 +77,10 @@ void main() {
   float p = smoothstep(aSeed.x * ${SPREAD.toFixed(2)}, aSeed.x * ${SPREAD.toFixed(2)} + ${(1 - SPREAD).toFixed(2)}, uT);
   vec3 a = uSwirlFrom > 0.5 ? swirl(aFrom) : aFrom;
   vec3 b = uSwirlTo > 0.5 ? swirl(aTo) : aTo;
+  // A packet runs along its edge, over and over, each at its own phase
+  float trip = fract(uTime * ${FLOW_SPEED.toFixed(2)} + aSeed.x * 7.0);
+  a += aFlowFrom.xyz * trip;
+  b += aFlowTo.xyz * trip;
   vec3 pos = mix(a, b, p) + aSeed.yzw * sin(p * 3.14159) * uDetour;
 
   // The entity also pulses and twitches, frame to frame
@@ -120,7 +132,10 @@ void main() {
   vec2 g = clip - uWell.xy;
   g.x *= uAspect;
   float gr = length(g);
-  float fall = min(0.07 * exp(-gr * gr / 0.15), gr * 0.45) * uWell.z * onOrb;
+  // Held down, the pull grows and reaches further (up to a limit), and the
+  // grains within it can fall almost all the way in
+  float reach = 0.55 + 0.35 * uGrip;
+  float fall = min((0.07 + 0.25 * uGrip) * smoothstep(reach, 0.0, gr), gr * (0.45 + 0.45 * uGrip)) * uWell.z * onOrb;
   g = (g / max(gr, 1e-4)) * fall;
   g.x /= uAspect;
   clip -= g;
@@ -136,6 +151,11 @@ void main() {
   // The dense core would pile up into a blot: thin it out
   float shell = smoothstep(0.08, 0.45, length(mix(aFrom, aTo, p)));
   float entGlow = mix(0.15, 1.0, shell);
+  // Packets: a touch bigger, steady, and faded in and out at the nodes
+  float packet = mix(aFlowFrom.w, aFlowTo.w, p) * settled;
+  vPacket = packet;
+  vTrip = sqrt(sin(trip * 3.14159));
+  vary = mix(vary, 1.6, packet);
   gl_PointSize = uSize * (3.2 / w) * vary * mix(1.0, uTextSize, crisp);
   vPx = gl_PointSize;
   vCrisp = crisp;
@@ -152,6 +172,10 @@ uniform float uAlpha;
 uniform float uDepthFade; // 0–1: how much the far side fades, for a sense of depth
 uniform vec3 uGoldA; // the entity's gold, at the centre and the rim
 uniform vec3 uGoldB;
+uniform vec3 uPacket; // the packets' colour
+uniform float uPacketAlpha; // full on stage, faint behind the page
+varying float vPacket;
+varying float vTrip;
 varying float vGlow;
 varying float vEnt;
 varying float vRadial;
@@ -175,7 +199,8 @@ void main() {
   // the entity's grains are near-solid too, dimmed a little toward the back
   float ink = mix(uAlpha * depth, 1.0, vCrisp);
   ink = mix(ink, 0.55 + 0.4 * vDepth, vEnt);
-  gl_FragColor = vec4(col, a * vGlow * ink);
+  col = mix(col, uPacket, vPacket);
+  gl_FragColor = vec4(col, a * mix(vGlow * ink, vTrip * uPacketAlpha, vPacket));
 }`;
 
 export interface Field {
@@ -195,6 +220,9 @@ function rgb(css: string): [number, number, number] {
 }
 
 // The entity's gold, [centre, rim]: pale in the middle, deeper outside
+// Packets on the network: white on dark; on paper, where white would vanish, ink
+const PACKET = { dark: rgb("#fffdf6"), light: rgb("#16130c") };
+
 const GOLD = {
   dark: [rgb("#f4e6c6"), rgb("#b68d4c")],
   light: [rgb("#dcc28a"), rgb("#86590f")],
@@ -226,7 +254,7 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const u = (name: string) => gl.getUniformLocation(prog, name);
   const U = {
     t: u("uT"), time: u("uTime"), swirlFrom: u("uSwirlFrom"), swirlTo: u("uSwirlTo"), detour: u("uDetour"),
-    turn: u("uTurn"), mouse: u("uMouse"), well: u("uWell"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
+    turn: u("uTurn"), mouse: u("uMouse"), well: u("uWell"), grip: u("uGrip"), packet: u("uPacket"), packetAlpha: u("uPacketAlpha"), aspect: u("uAspect"), center: u("uCenter"), scale: u("uScale"),
     size: u("uSize"), a: u("uColorA"), b: u("uColorB"), alpha: u("uAlpha"), depthFade: u("uDepthFade"),
     entFrom: u("uEntFrom"), entTo: u("uEntTo"), goldA: u("uGoldA"), goldB: u("uGoldB"),
     crispFrom: u("uCrispFrom"), crispTo: u("uCrispTo"), textSize: u("uTextSize"),
@@ -256,11 +284,18 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const fromBuf = buffer(from, "aFrom", 3);
   const toBuf = buffer(to, "aTo", 3);
   const seedBuf = buffer(seed, "aSeed", 4);
+  const still = new Float32Array(N * 4); // no packets
+  const flowFromBuf = buffer(still, "aFlowFrom", 4);
+  const flowToBuf = buffer(still, "aFlowTo", 4);
   const upload = () => {
     gl.bindBuffer(gl.ARRAY_BUFFER, fromBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, from);
     gl.bindBuffer(gl.ARRAY_BUFFER, toBuf);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, to);
+    gl.bindBuffer(gl.ARRAY_BUFFER, flowFromBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, flows.get(from) ?? still);
+    gl.bindBuffer(gl.ARRAY_BUFFER, flowToBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, flows.get(to) ?? still);
   };
 
   let colors = { a: rgb("#fff"), b: rgb("#888"), dark: true };
@@ -313,8 +348,15 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   const onLeave = () => {
     mouse.x = mouse.y = 9;
   };
-  // The orb's gravity well trails the pointer and fades in and out with it
-  const well = { x: 0, y: 0, s: 0 };
+  // The orb's gravity well trails the pointer and fades in and out with it;
+  // holding the pointer down strengthens it
+  const well = { x: 0, y: 0, s: 0, grip: 0 };
+  let held = false;
+  const onDown = (e: PointerEvent) => {
+    onMove(e);
+    held = true;
+  };
+  const onUp = () => (held = false);
 
   // Where things should be for the current shape and place
   function targets() {
@@ -360,6 +402,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       well.y += (mouse.y - well.y) * 0.08;
     }
     well.s += ((here ? 1 : 0) - well.s) * 0.05;
+    // builds up over about a second; lets go a little faster
+    well.grip += ((here && held ? 1 : 0) - well.grip) * (held ? 0.03 : 0.06);
 
     const text = current !== null && isText(current);
     const spin = current !== null && SPINS.includes(current);
@@ -393,6 +437,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     gl!.uniform2f(U.turn, yaw + ease.lx * lean, (text ? 0 : 0.1) + ease.ly * lean);
     gl!.uniform2f(U.mouse, motion ? mouse.x : 9, motion ? mouse.y : 9);
     gl!.uniform3f(U.well, well.x, well.y, well.s);
+    gl!.uniform1f(U.grip, well.grip);
+    gl!.uniform3fv(U.packet, colors.dark ? PACKET.dark : PACKET.light);
+    gl!.uniform1f(U.packetAlpha, Math.min(1, ease.alpha / 0.6));
     gl!.uniform1f(U.aspect, w / h);
     gl!.uniform2f(U.center, ease.cx, ease.cy);
     gl!.uniform1f(U.scale, ease.scale);
@@ -417,6 +464,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
     const time = clock;
     const tc = Math.cos(TIP), ts = Math.sin(TIP);
     const out = new Float32Array(N * 3);
+    const fa = flows.get(from);
+    const fb = flows.get(to);
     for (let i = 0; i < N; i++) {
       const s = seed[i * 4] * SPREAD;
       const x = Math.min(1, Math.max(0, (t - s) / (1 - SPREAD)));
@@ -430,6 +479,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       };
       let [ax, ay, az] = [from[i * 3], from[i * 3 + 1], from[i * 3 + 2]];
       let [bx, by, bz] = [to[i * 3], to[i * 3 + 1], to[i * 3 + 2]];
+      const trip = (((time * FLOW_SPEED + seed[i * 4] * 7) % 1) + 1) % 1;
+      if (fa) [ax, ay, az] = [ax + fa[i * 4] * trip, ay + fa[i * 4 + 1] * trip, az + fa[i * 4 + 2] * trip];
+      if (fb) [bx, by, bz] = [bx + fb[i * 4] * trip, by + fb[i * 4 + 1] * trip, bz + fb[i * 4 + 2] * trip];
       if (motion && swirlFrom) [ax, ay, az] = turn(ax, ay, az);
       if (motion && swirlTo) [bx, by, bz] = turn(bx, by, bz);
       out[i * 3] = ax + (bx - ax) * p + seed[i * 4 + 1] * bump;
@@ -547,6 +599,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
   Object.assign(ease, { cx: start.cx, cy: start.cy, scale: start.scale, alpha: start.alpha });
   addEventListener("resize", resize);
   addEventListener("pointermove", onMove, { passive: true });
+  addEventListener("pointerdown", onDown, { passive: true });
+  addEventListener("pointerup", onUp);
+  addEventListener("pointercancel", onUp);
   document.addEventListener("pointerleave", onLeave);
   document.addEventListener("visibilitychange", onVisibility);
   run();
@@ -564,6 +619,9 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       themeWatch.disconnect();
       removeEventListener("resize", resize);
       removeEventListener("pointermove", onMove);
+      removeEventListener("pointerdown", onDown);
+      removeEventListener("pointerup", onUp);
+      removeEventListener("pointercancel", onUp);
       document.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
       // Free what it holds, but keep the context: the canvas stays, and if
@@ -572,6 +630,8 @@ export function startField(canvas: HTMLCanvasElement, first: Shape, firstStage: 
       gl.deleteBuffer(fromBuf);
       gl.deleteBuffer(toBuf);
       gl.deleteBuffer(seedBuf);
+      gl.deleteBuffer(flowFromBuf);
+      gl.deleteBuffer(flowToBuf);
       gl.deleteProgram(prog);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
