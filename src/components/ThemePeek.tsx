@@ -12,12 +12,12 @@ import { forSession, setPalette, setSessionPalette, transition } from "./Appeara
 // Trying one only lasts the session (like the console's out-of-season
 // themes), with "Keep it" to make it stick or "Back" to undo. First-time
 // visitors get it until they act on it; anyone who has picked a theme sees
-// it only for a few seconds (longer while the pointer's on it). Closing it,
-// or keeping a theme, hides it for good.
+// it only for a few seconds (longer while the pointer's on it). Only closing
+// it hides it for good.
 
 const SEASON_ICONS: Record<Season, typeof Sun> = { spring: Flower2, summer: Sun, autumn: Leaf, winter: Snowflake };
 
-const DONE = "peek"; // localStorage: "done" once kept or closed
+const DONE = "peek"; // localStorage: "done" once closed
 const PEEKING = "peek"; // sessionStorage: the theme being tried
 const BRIEF_MS = 8000; // how long it stays for someone who's picked a theme
 
@@ -103,7 +103,6 @@ export default function ThemePeek() {
   const keep = () => {
     setPalette(state);
     forSession(PEEKING, null);
-    save(DONE, "done");
     setState("hidden");
   };
   const close = () => {
